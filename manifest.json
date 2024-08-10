@@ -1,0 +1,18 @@
+{
+  "manifest_version": 3,
+  "name": "Job List Filter",
+  "version": "1.0",
+  "description": "Filter job listings. Save time.",
+  "content_scripts": [
+    {
+      "js": ["/scripts/content.js"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "background": {
+    "service_worker": "/scripts/service_worker.js",
+    "type": "module"
+  },
+  "host_permissions": ["<all_urls>"],
+  "permissions": ["tabs", "activeTab"]
+}
