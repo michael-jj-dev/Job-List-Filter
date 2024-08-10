@@ -20,8 +20,10 @@ function onMutation(mutationsList, observer) {
   mutationsList.forEach((mutation) => {
     const isChildListMutation = mutation.type === 'childList';
     const hasAddedNodes = mutation.addedNodes.length > 0;
+    const isRelevantTarget =
+      mutation.target.nodeName === 'LI' || mutation.target.nodeName === 'DIV';
 
-    if (!isChildListMutation || !hasAddedNodes) return;
+    if (!isChildListMutation || !hasAddedNodes || !isRelevantTarget) return;
 
     mutation.addedNodes.forEach((node) => {
       const isRelevantNode = node.nodeName === 'LI' || node.nodeName === 'DIV';
