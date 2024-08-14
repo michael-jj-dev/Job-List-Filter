@@ -39,11 +39,25 @@ function findNearestListing(element) {
   return null;
 }
 
+function getElementAttributes(element) {
+  let attributesObj = {};
+
+  Array.from(element.attributes).forEach((attr) => {
+    attributesObj[attr.name] = attr.value;
+  });
+
+  return attributesObj;
+}
+
 const htmlElement = document.querySelector('html'); // Or document.querySelector('html');
 
 htmlElement.addEventListener('click', (event) => {
   const listing = findNearestListing(event.target);
+
+  let listingsAttributes = getElementAttributes(listing);
+
   console.log(listing);
+  console.log('listingsAttributes:', listingsAttributes);
 });
 
 function listingMutated() {
