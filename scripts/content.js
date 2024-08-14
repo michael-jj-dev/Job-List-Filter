@@ -12,6 +12,40 @@ chrome.runtime.sendMessage(
   }
 );
 
+function findNearestListing(element) {
+  var currentElement = element.parentElement;
+
+  while (currentElement !== null) {
+    if (currentElement.tagName.toLowerCase() === 'ul') {
+      return currentElement;
+    }
+    currentElement = currentElement.parentElement;
+  }
+
+  currentElement = element.parentElement;
+
+  while (currentElement !== null) {
+    if (currentElement.tagName.toLowerCase() === 'div') {
+      var divChildren = Array.from(currentElement.children).filter(
+        (child) => child.tagName.toLowerCase() === 'div'
+      );
+      if (divChildren.length > 5) {
+        return currentElement;
+      }
+    }
+    currentElement = currentElement.parentElement;
+  }
+
+  return null;
+}
+
+const htmlElement = document.querySelector('html'); // Or document.querySelector('html');
+
+htmlElement.addEventListener('click', (event) => {
+  const listing = findNearestListing(event.target);
+  console.log(listing);
+});
+
 function listingMutated() {
   console.log('mutation observed');
 }
