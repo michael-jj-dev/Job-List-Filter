@@ -51,14 +51,18 @@ function getElementAttributes(element) {
 
 const htmlElement = document.querySelector('html'); // Or document.querySelector('html');
 
-htmlElement.addEventListener('click', (event) => {
-  const listing = findNearestListing(event.target);
+htmlElement.addEventListener(
+  'click',
+  (event) => {
+    const listing = findNearestListing(event.target);
 
-  let listingsAttributes = getElementAttributes(listing);
+    let listingsAttributes = getElementAttributes(listing);
 
-  console.log(listing);
-  console.log('listingsAttributes:', listingsAttributes);
-});
+    console.log(listing);
+    console.log('listingsAttributes:', listingsAttributes);
+  },
+  true
+);
 
 function listingMutated() {
   console.log('mutation observed');
