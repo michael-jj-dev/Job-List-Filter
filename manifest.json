@@ -14,5 +14,8 @@
     "type": "module"
   },
   "host_permissions": ["<all_urls>"],
-  "permissions": ["tabs", "activeTab"]
+  "permissions": ["tabs", "activeTab", "storage", "scripting"],
+  "action": {
+    "default_popup": "/scripts/popup.html"
+  }
 }
