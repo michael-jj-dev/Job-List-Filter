@@ -21,7 +21,7 @@ function initializeScript() {
 }
 
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
-  //TODO: check if already injected. but is this even a realistic use case?
+  removeListingHighlight();
   if (request.action === 'toggleTargetter') {
     targetterEnabled = true;
 
