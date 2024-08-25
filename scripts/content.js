@@ -30,6 +30,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 });
 
 function injectUI(htmlPath, cssPath, containerId, callback) {
+  //TODO: this will eventually have to become one persistent UI with its values being changed, instead of reinjecting containers each call
   fetch(chrome.runtime.getURL(htmlPath))
     .then((response) => response.text())
     .then((html) => {
@@ -42,6 +43,25 @@ function injectUI(htmlPath, cssPath, containerId, callback) {
       container.id = containerId;
       container.innerHTML = html;
       document.body.appendChild(container);
+
+      const closeButton = document.createElement('button'); //TODO: move this to its own component
+      closeButton.id = 'jlf_close_container_button';
+      closeButton.textContent = 'X';
+      closeButton.style.position = 'absolute';
+      closeButton.style.top = '10px';
+      closeButton.style.right = '10px';
+      closeButton.style.zIndex = '1000';
+      closeButton.style.background = 'red';
+      closeButton.style.color = 'white';
+      closeButton.style.border = 'none';
+      closeButton.style.borderRadius = '50%';
+      closeButton.style.width = '20px';
+      closeButton.style.height = '20px';
+      closeButton.style.cursor = 'pointer';
+
+      closeButton.addEventListener('click', containerClosed);
+
+      container.appendChild(closeButton);
 
       return fetch(chrome.runtime.getURL(cssPath));
     })
@@ -58,6 +78,13 @@ function injectUI(htmlPath, cssPath, containerId, callback) {
     .catch((error) =>
       console.error(`Failed to load resources for ${containerId}:`, error)
     );
+}
+
+function containerClosed() {
+  //TODO: what needs to be reset here
+  removeListingHighlight();
+  targetterEnabled = false;
+  removeUI();
 }
 
 function removeUI() {
@@ -140,7 +167,9 @@ function onDeclineClick() {
 }
 
 function removeListingHighlight() {
-  highlightedElement.style.border = '';
+  if (highlightedElement) {
+    highlightedElement.style.border = '';
+  }
 }
 
 function highlightListing(listingElement) {
@@ -157,6 +186,12 @@ const htmlElement = document.querySelector('html'); //TODO: Or document.querySel
 htmlElement.addEventListener(
   'click',
   (event) => {
+    const targetId = event.target.id;
+
+    if (targetId && targetId.startsWith('jlf_')) {
+      return;
+    }
+
     if (targetterEnabled) {
       const listing = findNearestListing(event.target);
       const listingsAttributes = getElementAttributes(listing);
