@@ -21,11 +21,9 @@ function initializeScript() {
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   //TODO: check if already injected. but is this even a realistic use case?
   if (request.action === 'toggleTargetter') {
-    console.log('Command received from popup via background.js');
+    targetterEnabled = true;
 
     injectPrompt();
-
-    targetterEnabled = true;
   }
 });
 
@@ -95,6 +93,8 @@ function injectConfirmation() {
 }
 
 function onConfirmClick() {
+  targetterEnabled = false;
+
   removeUI('jlf_confirmation_container');
 }
 
@@ -108,8 +108,6 @@ htmlElement.addEventListener(
       const listingsAttributes = getElementAttributes(listing);
 
       injectConfirmation();
-
-      targetterEnabled = false;
     }
   },
   true
