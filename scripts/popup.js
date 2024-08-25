@@ -21,6 +21,7 @@ document.getElementById('targetterBtn').addEventListener('click', () => {
       action: 'toggleTargetter'
     });
   });
+  window.close();
 });
 
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
