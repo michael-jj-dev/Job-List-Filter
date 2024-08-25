@@ -98,7 +98,7 @@ function injectRetryPrompt() {
   );
 }
 
-function injectConfirmation() {
+function injectConfirmation(listingsAttributes) {
   removeUI();
   injectUI(
     'ui/confirmation/confirmation.html',
@@ -113,7 +113,9 @@ function injectConfirmation() {
       );
 
       if (confirmButton) {
-        confirmButton.addEventListener('click', onConfirmClick);
+        confirmButton.addEventListener('click', () =>
+          onConfirmClick(listingsAttributes)
+        );
       }
       if (declineButton) {
         declineButton.addEventListener('click', onDeclineClick);
@@ -122,7 +124,9 @@ function injectConfirmation() {
   );
 }
 
-function onConfirmClick() {
+function onConfirmClick(listingsAttributes) {
+  attribuitions = listingsAttributes; //TODO: attribuitions or attributes
+  console.log(listingsAttributes);
   removeUI();
 
   //TODO: add temporary prompt that automatically disappears after a couple of seconds
@@ -160,11 +164,10 @@ htmlElement.addEventListener(
       if (listingsAttributes === null) {
         injectRetryPrompt();
       } else {
-        attribuitions = listingsAttributes; //TODO: attribuitions or attributes
         targetterEnabled = false;
 
         highlightListing(listing);
-        injectConfirmation();
+        injectConfirmation(listingsAttributes);
       }
     }
   },
