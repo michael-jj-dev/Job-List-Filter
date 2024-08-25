@@ -24,7 +24,9 @@
         "ui/prompt/prompt.html",
         "ui/prompt/prompt.css",
         "ui/confirmation/confirmation.html",
-        "ui/confirmation/confirmation.css"
+        "ui/confirmation/confirmation.css",
+        "ui/retryPrompt/retryPrompt.html",
+        "ui/retryPrompt/retryPrompt.css"
       ],
       "matches": ["<all_urls>"]
     }

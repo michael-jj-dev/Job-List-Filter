@@ -5,6 +5,7 @@ const version = manifest.version;
 
 let targetterEnabled = false;
 let attribuitions = null; //TOOD: null or {}?
+let highlightedElement = null;
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initializeScript);
@@ -75,6 +76,16 @@ function injectPrompt() {
   );
 }
 
+function injectRetryPrompt() {
+  removeUI('jlf_prompt_container');
+  removeUI('jlf_retry_prompt_container');
+  injectUI(
+    'ui/retryPrompt/retryPrompt.html',
+    'ui/retryPrompt/retryPrompt.css',
+    'jlf_retry_prompt_container'
+  );
+}
+
 function injectConfirmation() {
   removeUI('jlf_prompt_container');
   injectUI(
@@ -98,6 +109,15 @@ function onConfirmClick() {
   removeUI('jlf_confirmation_container');
 }
 
+function highlightListing(listingElement) {
+  if (highlightedElement !== null) {
+    highlightedElement.style.border = '';
+  }
+
+  highlightedElement = listingElement;
+  listingElement.style.border = '2px solid aqua';
+}
+
 const htmlElement = document.querySelector('html'); //TODO: Or document.querySelector('html');
 
 htmlElement.addEventListener(
@@ -107,7 +127,14 @@ htmlElement.addEventListener(
       const listing = findNearestListing(event.target);
       const listingsAttributes = getElementAttributes(listing);
 
-      injectConfirmation();
+      if (listingsAttributes === null) {
+        injectRetryPrompt();
+      } else {
+        attribuitions = listingsAttributes; //TODO: attribuitions or attributes
+        highlightListing(listing);
+
+        injectConfirmation();
+      }
     }
   },
   true
@@ -166,13 +193,15 @@ function findNearestListing(element) {
 function getElementAttributes(element) {
   let attributesObj = {};
 
-  if (element.attributes !== null) {
+  if (element === null || element.attributes === null) {
+    return null;
+  } else {
     Array.from(element.attributes).forEach((attr) => {
       attributesObj[attr.name] = attr.value;
     });
-  }
 
-  return attributesObj;
+    return attributesObj;
+  }
 }
 
 const observer = new MutationObserver(onMutation);
