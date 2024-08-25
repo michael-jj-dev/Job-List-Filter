@@ -1,24 +1,209 @@
 var port = chrome.runtime.connect({ name: 'knockknock' });
 
-let targetEnabled = true;
+const manifest = chrome.runtime.getManifest();
+const version = manifest.version;
+
+let targetterEnabled = false;
+let attribuitions = null; //TOOD: null or {}?
+let highlightedElement = null;
+let observeMutations = false;
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initializeScript);
+} else {
+  initializeScript();
+}
+
+function initializeScript() {
+  console.log('Content script has been injected and DOM is fully loaded.');
+
+  //TODO: check if attribuitions is null or in storage
+}
 
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+  //TODO: check if already injected. but is this even a realistic use case?
   if (request.action === 'toggleTargetter') {
-    console.log('Command received from popup via background.js');
-    targetEnabled = true;
+    targetterEnabled = true;
+
+    injectPrompt();
   }
 });
 
-const htmlElement = document.querySelector('html'); // Or document.querySelector('html');
+function injectUI(htmlPath, cssPath, containerId, callback) {
+  //TODO: this will eventually have to become one persistent UI with its values being changed, instead of reinjecting containers each call
+  fetch(chrome.runtime.getURL(htmlPath))
+    .then((response) => response.text())
+    .then((html) => {
+      const existingContainer = document.getElementById(containerId);
+      if (existingContainer) {
+        existingContainer.remove();
+      }
+
+      const container = document.createElement('div');
+      container.id = containerId;
+      container.innerHTML = html;
+      document.body.appendChild(container);
+
+      const closeButton = document.createElement('button'); //TODO: move this to its own component
+      closeButton.id = 'jlf_close_container_button';
+      closeButton.textContent = 'X';
+      closeButton.style.position = 'absolute';
+      closeButton.style.top = '10px';
+      closeButton.style.right = '10px';
+      closeButton.style.zIndex = '1000';
+      closeButton.style.background = 'red';
+      closeButton.style.color = 'white';
+      closeButton.style.border = 'none';
+      closeButton.style.borderRadius = '50%';
+      closeButton.style.width = '20px';
+      closeButton.style.height = '20px';
+      closeButton.style.cursor = 'pointer';
+
+      closeButton.addEventListener('click', containerClosed);
+
+      container.appendChild(closeButton);
+
+      return fetch(chrome.runtime.getURL(cssPath));
+    })
+    .then((response) => response.text())
+    .then((css) => {
+      const style = document.createElement('style');
+      style.textContent = css;
+      document.head.appendChild(style);
+
+      if (typeof callback === 'function') {
+        callback();
+      }
+    })
+    .catch((error) =>
+      console.error(`Failed to load resources for ${containerId}:`, error)
+    );
+}
+
+function containerClosed() {
+  //TODO: what needs to be reset here
+  removeListingHighlight();
+  targetterEnabled = false;
+  removeUI();
+}
+
+function removeUI() {
+  const promptContainer = document.getElementById('jlf_prompt_container');
+  const retryPromptContainer = document.getElementById(
+    'jlf_retry_prompt_container'
+  );
+  const confirmationContainer = document.getElementById(
+    'jlf_confirmation_container'
+  );
+
+  if (promptContainer) {
+    promptContainer.remove();
+  }
+  if (retryPromptContainer) {
+    retryPromptContainer.remove();
+  }
+  if (confirmationContainer) {
+    confirmationContainer.remove();
+  }
+}
+
+function injectPrompt() {
+  removeUI();
+  injectUI(
+    'ui/prompt/prompt.html',
+    'ui/prompt/prompt.css',
+    'jlf_prompt_container'
+  );
+}
+
+function injectRetryPrompt() {
+  removeUI();
+  injectUI(
+    'ui/retryPrompt/retryPrompt.html',
+    'ui/retryPrompt/retryPrompt.css',
+    'jlf_retry_prompt_container'
+  );
+}
+
+function injectConfirmation(listingsAttributes) {
+  removeUI();
+  injectUI(
+    'ui/confirmation/confirmation.html',
+    'ui/confirmation/confirmation.css',
+    'jlf_confirmation_container',
+    () => {
+      const confirmButton = document.getElementById(
+        'jlf_confirmation_container_confirm_button'
+      );
+      const declineButton = document.getElementById(
+        'jlf_confirmation_container_decline_button'
+      );
+
+      if (confirmButton) {
+        confirmButton.addEventListener('click', () =>
+          onConfirmClick(listingsAttributes)
+        );
+      }
+      if (declineButton) {
+        declineButton.addEventListener('click', onDeclineClick);
+      }
+    }
+  );
+}
+
+function onConfirmClick(listingsAttributes) {
+  attribuitions = listingsAttributes; //TODO: attribuitions or attributes
+  console.log(listingsAttributes);
+  removeUI();
+
+  //TODO: add temporary prompt that automatically disappears after a couple of seconds
+}
+
+function onDeclineClick() {
+  removeUI();
+  injectPrompt();
+  removeListingHighlight();
+  targetterEnabled = true;
+}
+
+function removeListingHighlight() {
+  if (highlightedElement) {
+    highlightedElement.style.border = '';
+  }
+}
+
+function highlightListing(listingElement) {
+  if (highlightedElement !== null) {
+    removeListingHighlight();
+  }
+
+  highlightedElement = listingElement;
+  listingElement.style.border = '2px solid aqua';
+}
+
+const htmlElement = document.querySelector('html'); //TODO: Or document.querySelector('html');
 
 htmlElement.addEventListener(
   'click',
   (event) => {
-    if (targetEnabled) {
+    const targetId = event.target.id;
+
+    if (targetId && targetId.startsWith('jlf_')) {
+      return;
+    }
+
+    if (targetterEnabled) {
       const listing = findNearestListing(event.target);
       const listingsAttributes = getElementAttributes(listing);
 
-      targetEnabled = false;
+      if (listingsAttributes === null) {
+        injectRetryPrompt();
+      } else {
+        targetterEnabled = false;
+
+        highlightListing(listing);
+        injectConfirmation(listingsAttributes);
+      }
     }
   },
   true
@@ -61,10 +246,12 @@ function findNearestListing(element) {
 
   while (currentElement !== null) {
     if (currentElement.tagName.toLowerCase() === 'div') {
-      var divChildren = Array.from(currentElement.children).filter(
+      const children = Array.from(currentElement.children);
+      const divChildren = children.filter(
         (child) => child.tagName.toLowerCase() === 'div'
       );
-      if (divChildren.length > 5) {
+
+      if (divChildren.length >= 10 && children.length === divChildren.length) {
         return currentElement;
       }
     }
@@ -77,13 +264,15 @@ function findNearestListing(element) {
 function getElementAttributes(element) {
   let attributesObj = {};
 
-  if (element.attributes !== null) {
+  if (element === null || element.attributes === null) {
+    return null;
+  } else {
     Array.from(element.attributes).forEach((attr) => {
       attributesObj[attr.name] = attr.value;
     });
-  }
 
-  return attributesObj;
+    return attributesObj;
+  }
 }
 
 const observer = new MutationObserver(onMutation);
