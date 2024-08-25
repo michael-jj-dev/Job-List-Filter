@@ -6,6 +6,7 @@ const version = manifest.version;
 let targetterEnabled = false;
 let attribuitions = null; //TOOD: null or {}?
 let highlightedElement = null;
+let observeMutations = false;
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initializeScript);
@@ -59,16 +60,28 @@ function injectUI(htmlPath, cssPath, containerId, callback) {
     );
 }
 
-function removeUI(containerId) {
-  const existingContainer = document.getElementById(containerId);
+function removeUI() {
+  const promptContainer = document.getElementById('jlf_prompt_container');
+  const retryPromptContainer = document.getElementById(
+    'jlf_retry_prompt_container'
+  );
+  const confirmationContainer = document.getElementById(
+    'jlf_confirmation_container'
+  );
 
-  if (existingContainer) {
-    existingContainer.remove();
+  if (promptContainer) {
+    promptContainer.remove();
+  }
+  if (retryPromptContainer) {
+    retryPromptContainer.remove();
+  }
+  if (confirmationContainer) {
+    confirmationContainer.remove();
   }
 }
 
 function injectPrompt() {
-  removeUI('jlf_prompt_container');
+  removeUI();
   injectUI(
     'ui/prompt/prompt.html',
     'ui/prompt/prompt.css',
@@ -77,8 +90,7 @@ function injectPrompt() {
 }
 
 function injectRetryPrompt() {
-  removeUI('jlf_prompt_container');
-  removeUI('jlf_retry_prompt_container');
+  removeUI();
   injectUI(
     'ui/retryPrompt/retryPrompt.html',
     'ui/retryPrompt/retryPrompt.css',
@@ -87,31 +99,49 @@ function injectRetryPrompt() {
 }
 
 function injectConfirmation() {
-  removeUI('jlf_prompt_container');
+  removeUI();
   injectUI(
     'ui/confirmation/confirmation.html',
     'ui/confirmation/confirmation.css',
     'jlf_confirmation_container',
     () => {
-      const button = document.getElementById(
+      const confirmButton = document.getElementById(
         'jlf_confirmation_container_confirm_button'
       );
-      if (button) {
-        button.addEventListener('click', onConfirmClick);
+      const declineButton = document.getElementById(
+        'jlf_confirmation_container_decline_button'
+      );
+
+      if (confirmButton) {
+        confirmButton.addEventListener('click', onConfirmClick);
+      }
+      if (declineButton) {
+        declineButton.addEventListener('click', onDeclineClick);
       }
     }
   );
 }
 
 function onConfirmClick() {
-  targetterEnabled = false;
+  removeUI();
 
-  removeUI('jlf_confirmation_container');
+  //TODO: add temporary prompt that automatically disappears after a couple of seconds
+}
+
+function onDeclineClick() {
+  removeUI();
+  injectPrompt();
+  removeListingHighlight();
+  targetterEnabled = true;
+}
+
+function removeListingHighlight() {
+  highlightedElement.style.border = '';
 }
 
 function highlightListing(listingElement) {
   if (highlightedElement !== null) {
-    highlightedElement.style.border = '';
+    removeListingHighlight();
   }
 
   highlightedElement = listingElement;
@@ -131,8 +161,9 @@ htmlElement.addEventListener(
         injectRetryPrompt();
       } else {
         attribuitions = listingsAttributes; //TODO: attribuitions or attributes
-        highlightListing(listing);
+        targetterEnabled = false;
 
+        highlightListing(listing);
         injectConfirmation();
       }
     }
