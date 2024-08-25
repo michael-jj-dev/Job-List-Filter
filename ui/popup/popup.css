@@ -1,0 +1,10 @@
+body {
+  width: 200px;
+  padding: 20px;
+  font-family: Arial, sans-serif;
+}
+
+#targetterBtn {
+  padding: 10px;
+  width: 100%;
+}

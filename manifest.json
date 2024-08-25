@@ -16,7 +16,7 @@
   "host_permissions": ["<all_urls>"],
   "permissions": ["tabs", "activeTab", "storage", "scripting"],
   "action": {
-    "default_popup": "/scripts/popup.html"
+    "default_popup": "/ui/popup/popup.html"
   },
   "web_accessible_resources": [
     {
