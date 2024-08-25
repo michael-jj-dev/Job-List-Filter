@@ -29,60 +29,73 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   }
 });
 
-function injectPrompt() {
-  fetch(chrome.runtime.getURL('ui/prompt/prompt.html'))
+function injectUI(htmlPath, cssPath, containerId, callback) {
+  fetch(chrome.runtime.getURL(htmlPath))
     .then((response) => response.text())
     .then((html) => {
-      const uiContainer = document.createElement('div');
-      uiContainer.id = 'jlf_prompt_container';
-      uiContainer.innerHTML = html;
-      document.body.appendChild(uiContainer);
+      const existingContainer = document.getElementById(containerId);
+      if (existingContainer) {
+        existingContainer.remove();
+      }
 
-      return fetch(chrome.runtime.getURL('ui/prompt/prompt.css'));
+      const container = document.createElement('div');
+      container.id = containerId;
+      container.innerHTML = html;
+      document.body.appendChild(container);
+
+      return fetch(chrome.runtime.getURL(cssPath));
     })
     .then((response) => response.text())
     .then((css) => {
       const style = document.createElement('style');
       style.textContent = css;
       document.head.appendChild(style);
+
+      if (typeof callback === 'function') {
+        callback();
+      }
     })
-    .catch((error) => console.error('Failed to load resources:', error));
+    .catch((error) =>
+      console.error(`Failed to load resources for ${containerId}:`, error)
+    );
+}
+
+function removeUI(containerId) {
+  const existingContainer = document.getElementById(containerId);
+
+  if (existingContainer) {
+    existingContainer.remove();
+  }
+}
+
+function injectPrompt() {
+  removeUI('jlf_prompt_container');
+  injectUI(
+    'ui/prompt/prompt.html',
+    'ui/prompt/prompt.css',
+    'jlf_prompt_container'
+  );
 }
 
 function injectConfirmation() {
-  fetch(chrome.runtime.getURL('ui/confirmation/confirmation.html'))
-    .then((response) => response.text())
-    .then((html) => {
-      const promptContainer = document.getElementById('jlf_prompt_container');
-      if (promptContainer) {
-        promptContainer.remove();
+  removeUI('jlf_prompt_container');
+  injectUI(
+    'ui/confirmation/confirmation.html',
+    'ui/confirmation/confirmation.css',
+    'jlf_confirmation_container',
+    () => {
+      const button = document.getElementById(
+        'jlf_confirmation_container_confirm_button'
+      );
+      if (button) {
+        button.addEventListener('click', onConfirmClick);
       }
-
-      const uiContainer = document.createElement('div');
-      uiContainer.id = 'jlf_confirmation_container';
-      uiContainer.innerHTML = html;
-      document.body.appendChild(uiContainer);
-
-      return fetch(chrome.runtime.getURL('ui/confirmation/confirmation.css'));
-    })
-    .then((response) => response.text())
-    .then((css) => {
-      const style = document.createElement('style');
-      style.textContent = css;
-      document.head.appendChild(style);
-
-      document.getElementById('myButton').addEventListener('click', () => {
-        handleButtonClick();
-      });
-    })
-    .catch((error) => console.error('Failed to load resources:', error));
+    }
+  );
 }
 
-function handleButtonClick() {
-  const uiContainer = document.getElementById('jlf_confirmation_container');
-  if (uiContainer) {
-    uiContainer.remove();
-  }
+function onConfirmClick() {
+  removeUI('jlf_confirmation_container');
 }
 
 const htmlElement = document.querySelector('html'); //TODO: Or document.querySelector('html');

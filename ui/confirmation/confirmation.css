@@ -12,7 +12,7 @@
   border-radius: 5px 0 0 5px;
 }
 
-#myButton {
+#jlf_confirmation_container_confirm_button {
   margin-top: 10px;
   padding: 5px 10px;
   background-color: #007bff;
@@ -22,6 +22,6 @@
   cursor: pointer;
 }
 
-#myButton:hover {
+#jlf_confirmation_container_confirm_button:hover {
   background-color: #0056b3;
 }
