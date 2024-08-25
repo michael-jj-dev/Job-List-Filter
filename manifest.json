@@ -17,5 +17,16 @@
   "permissions": ["tabs", "activeTab", "storage", "scripting"],
   "action": {
     "default_popup": "/scripts/popup.html"
-  }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "ui/prompt/prompt.html",
+        "ui/prompt/prompt.css",
+        "ui/confirmation/confirmation.html",
+        "ui/confirmation/confirmation.css"
+      ],
+      "matches": ["<all_urls>"]
+    }
+  ]
 }

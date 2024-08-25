@@ -1,24 +1,102 @@
 var port = chrome.runtime.connect({ name: 'knockknock' });
 
-let targetEnabled = true;
+const manifest = chrome.runtime.getManifest();
+const version = manifest.version;
+
+let targetterEnabled = false;
+let attribuitions = null; //TOOD: null or {}?
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initializeScript);
+} else {
+  initializeScript();
+}
+
+function initializeScript() {
+  console.log('Content script has been injected and DOM is fully loaded.');
+
+  //TODO: check if attribuitions is null or in storage
+}
 
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+  //TODO: check if already injected. but is this even a realistic use case?
   if (request.action === 'toggleTargetter') {
     console.log('Command received from popup via background.js');
-    targetEnabled = true;
+
+    injectPrompt();
+
+    targetterEnabled = true;
   }
 });
 
-const htmlElement = document.querySelector('html'); // Or document.querySelector('html');
+function injectPrompt() {
+  fetch(chrome.runtime.getURL('ui/prompt/prompt.html'))
+    .then((response) => response.text())
+    .then((html) => {
+      const uiContainer = document.createElement('div');
+      uiContainer.id = 'jlf_prompt_container';
+      uiContainer.innerHTML = html;
+      document.body.appendChild(uiContainer);
+
+      return fetch(chrome.runtime.getURL('ui/prompt/prompt.css'));
+    })
+    .then((response) => response.text())
+    .then((css) => {
+      const style = document.createElement('style');
+      style.textContent = css;
+      document.head.appendChild(style);
+    })
+    .catch((error) => console.error('Failed to load resources:', error));
+}
+
+function injectConfirmation() {
+  fetch(chrome.runtime.getURL('ui/confirmation/confirmation.html'))
+    .then((response) => response.text())
+    .then((html) => {
+      const promptContainer = document.getElementById('jlf_prompt_container');
+      if (promptContainer) {
+        promptContainer.remove();
+      }
+
+      const uiContainer = document.createElement('div');
+      uiContainer.id = 'jlf_confirmation_container';
+      uiContainer.innerHTML = html;
+      document.body.appendChild(uiContainer);
+
+      return fetch(chrome.runtime.getURL('ui/confirmation/confirmation.css'));
+    })
+    .then((response) => response.text())
+    .then((css) => {
+      const style = document.createElement('style');
+      style.textContent = css;
+      document.head.appendChild(style);
+
+      document.getElementById('myButton').addEventListener('click', () => {
+        handleButtonClick();
+      });
+    })
+    .catch((error) => console.error('Failed to load resources:', error));
+}
+
+function handleButtonClick() {
+  const uiContainer = document.getElementById('jlf_confirmation_container');
+  if (uiContainer) {
+    uiContainer.remove();
+  }
+}
+
+const htmlElement = document.querySelector('html'); //TODO: Or document.querySelector('html');
 
 htmlElement.addEventListener(
   'click',
   (event) => {
-    if (targetEnabled) {
+    if (targetterEnabled) {
       const listing = findNearestListing(event.target);
       const listingsAttributes = getElementAttributes(listing);
 
-      targetEnabled = false;
+      injectConfirmation();
+
+      targetterEnabled = false;
     }
   },
   true
