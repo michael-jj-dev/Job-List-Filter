@@ -177,10 +177,12 @@ function findNearestListing(element) {
 
   while (currentElement !== null) {
     if (currentElement.tagName.toLowerCase() === 'div') {
-      var divChildren = Array.from(currentElement.children).filter(
+      const children = Array.from(currentElement.children);
+      const divChildren = children.filter(
         (child) => child.tagName.toLowerCase() === 'div'
       );
-      if (divChildren.length > 5) {
+
+      if (divChildren.length >= 10 && children.length === divChildren.length) {
         return currentElement;
       }
     }
