@@ -42,10 +42,10 @@ function checkStorageForAttr(key) {
   });
 }
 
-const keywordInputElements = document.querySelectorAll('.keyword-input');
-const addKeywordBtnElements = document.querySelectorAll('.add-keyword-btn');
-const easyQuickApplyCheckbox = document.getElementById('easy-quick-apply');
-const excludePromotedCheckbox = document.getElementById('exclude-promoted');
+const keywordInputElements = document.querySelectorAll('.jlf_keyword-input');
+const addKeywordBtnElements = document.querySelectorAll('.jlf_add-keyword-btn');
+const easyQuickApplyCheckbox = document.getElementById('jlf_easy-quick-apply');
+const excludePromotedCheckbox = document.getElementById('jlf_exclude-promoted');
 
 function addKeyword(inputId, keywordsListId, keyword) {
   if (keyword.trim() === '') return;
@@ -53,7 +53,7 @@ function addKeyword(inputId, keywordsListId, keyword) {
   const keywordsList = document.getElementById(keywordsListId);
 
   const keywordBubble = document.createElement('div');
-  keywordBubble.classList.add('keyword-bubble');
+  keywordBubble.classList.add('jlf_keyword-bubble');
   keywordBubble.textContent = keyword;
 
   const removeBtn = document.createElement('button');
@@ -66,6 +66,8 @@ function addKeyword(inputId, keywordsListId, keyword) {
   keywordsList.appendChild(keywordBubble);
 
   document.getElementById(inputId).value = '';
+
+  console.log(`Keyword added to ${keywordsListId}: ${keyword}`);
 }
 
 function handleInput(e) {
@@ -73,7 +75,7 @@ function handleInput(e) {
     e.preventDefault();
     const input = e.target;
     const inputId = input.id;
-    const keywordsListId = `keywords-list-${inputId.split('-')[2]}`;
+    const keywordsListId = `jlf_keywords-list-${inputId.split('-')[2]}`;
     addKeyword(inputId, keywordsListId, input.value.trim());
   }
 }
@@ -84,8 +86,8 @@ keywordInputElements.forEach((input) => {
 
 addKeywordBtnElements.forEach((btn) => {
   btn.addEventListener('click', () => {
-    const inputId = `keyword-input-${btn.getAttribute('data-id')}`;
-    const keywordsListId = `keywords-list-${btn.getAttribute('data-id')}`;
+    const inputId = `jlf_keyword-input-${btn.getAttribute('data-id')}`;
+    const keywordsListId = `jlf_keywords-list-${btn.getAttribute('data-id')}`;
     addKeyword(
       inputId,
       keywordsListId,

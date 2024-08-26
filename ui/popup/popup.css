@@ -1,4 +1,4 @@
-#targetterBtn {
+#jlf_targetterBtn {
   padding: 10px;
   width: 100%;
 }
@@ -10,32 +10,32 @@ body {
   width: 320px;
 }
 
-.keyword-section-container {
+.jlf_keyword-section-container {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-.keyword-container {
+.jlf_keyword-container {
   display: flex;
   flex-direction: column;
 }
 
-.keyword-container h3 {
+.jlf_keyword-container h3 {
   margin: 0 0 10px 0;
   font-size: 14px;
   font-weight: bold;
   color: #333;
 }
 
-.keywords-list {
+.jlf_keywords-list {
   display: flex;
   flex-wrap: wrap;
   gap: 5px;
   margin-bottom: 10px;
 }
 
-.keyword-bubble {
+.jlf_keyword-bubble {
   background-color: #007bff;
   color: white;
   border-radius: 15px;
@@ -45,7 +45,7 @@ body {
   gap: 5px;
 }
 
-.keyword-bubble button {
+.jlf_keyword-bubble button {
   background: none;
   border: none;
   color: white;
@@ -53,19 +53,19 @@ body {
   font-size: 12px;
 }
 
-.input-wrapper {
+.jlf_input-wrapper {
   display: flex;
   align-items: center;
 }
 
-.keyword-input {
+.jlf_keyword-input {
   border: 1px solid #ccc;
   padding: 5px;
   border-radius: 5px;
   width: calc(100% - 45px);
 }
 
-.add-keyword-btn {
+.jlf_add-keyword-btn {
   border: none;
   padding: 5px 10px;
   background-color: #007bff;
@@ -74,14 +74,14 @@ body {
   cursor: pointer;
 }
 
-.additional-options {
+.jlf_additional-options {
   margin-top: 20px;
 }
 
-.option {
+.jlf_option {
   margin-bottom: 10px;
 }
 
-.option input {
+.jlf_option input {
   margin-right: 10px;
 }
