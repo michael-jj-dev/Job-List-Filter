@@ -1,10 +1,87 @@
-body {
-  width: 200px;
-  padding: 20px;
-  font-family: Arial, sans-serif;
-}
-
 #targetterBtn {
   padding: 10px;
   width: 100%;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 10px;
+  width: 320px;
+}
+
+.keyword-section-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.keyword-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.keyword-container h3 {
+  margin: 0 0 10px 0;
+  font-size: 14px;
+  font-weight: bold;
+  color: #333;
+}
+
+.keywords-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 10px;
+}
+
+.keyword-bubble {
+  background-color: #007bff;
+  color: white;
+  border-radius: 15px;
+  padding: 5px 10px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.keyword-bubble button {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.input-wrapper {
+  display: flex;
+  align-items: center;
+}
+
+.keyword-input {
+  border: 1px solid #ccc;
+  padding: 5px;
+  border-radius: 5px;
+  width: calc(100% - 45px);
+}
+
+.add-keyword-btn {
+  border: none;
+  padding: 5px 10px;
+  background-color: #007bff;
+  color: white;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.additional-options {
+  margin-top: 20px;
+}
+
+.option {
+  margin-bottom: 10px;
+}
+
+.option input {
+  margin-right: 10px;
 }

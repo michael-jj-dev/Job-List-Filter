@@ -1,11 +1,79 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Job List Filter</title>
+    <title>Keyword Manager</title>
     <link rel="stylesheet" href="popup.css" />
   </head>
   <body>
     <button id="targetterBtn">Click Listing</button>
+    <div class="keyword-section-container">
+      <div class="keyword-container">
+        <h3>Job Title Must-Include Keyword</h3>
+        <div class="input-wrapper">
+          <input
+            type="text"
+            class="keyword-input"
+            id="keyword-input-1"
+            placeholder="Type and press ',' to add a keyword..."
+          />
+          <button class="add-keyword-btn" data-id="1">Add</button>
+        </div>
+        <div class="keywords-list" id="keywords-list-1"></div>
+      </div>
+      <div class="keyword-container">
+        <h3>Job Title Excluded Keyword</h3>
+        <div class="input-wrapper">
+          <input
+            type="text"
+            class="keyword-input"
+            id="keyword-input-2"
+            placeholder="Type and press ',' to add a keyword..."
+          />
+          <button class="add-keyword-btn" data-id="2">Add</button>
+        </div>
+        <div class="keywords-list" id="keywords-list-2"></div>
+      </div>
+      <div class="keyword-container">
+        <h3>Job Listing Must-Include Keyword</h3>
+        <div class="input-wrapper">
+          <input
+            type="text"
+            class="keyword-input"
+            id="keyword-input-3"
+            placeholder="Type and press ',' to add a keyword..."
+          />
+          <button class="add-keyword-btn" data-id="3">Add</button>
+        </div>
+        <div class="keywords-list" id="keywords-list-3"></div>
+      </div>
+      <div class="keyword-container">
+        <h3>Job Listing Excluded Keyword</h3>
+        <div class="input-wrapper">
+          <input
+            type="text"
+            class="keyword-input"
+            id="keyword-input-4"
+            placeholder="Type and press ',' to add a keyword..."
+          />
+          <button class="add-keyword-btn" data-id="4">Add</button>
+        </div>
+        <div class="keywords-list" id="keywords-list-4"></div>
+      </div>
+    </div>
+    <div class="additional-options">
+      <div class="option">
+        <input type="checkbox" id="easy-quick-apply" />
+        <label for="easy-quick-apply"
+          >Only look for listings with Easy or Quick Apply</label
+        >
+      </div>
+      <div class="option">
+        <input type="checkbox" id="exclude-promoted" />
+        <label for="exclude-promoted"
+          >Only include job listings that are not Promoted/Ad/Sponsored</label
+        >
+      </div>
+    </div>
     <script src="../../scripts/popup.js"></script>
   </body>
 </html>
