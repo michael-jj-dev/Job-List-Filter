@@ -85,3 +85,8 @@ body {
 .jlf_option input {
   margin-right: 10px;
 }
+
+.jlf_checkbox-row {
+  display: flex;
+  gap: 15px;
+}

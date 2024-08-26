@@ -46,6 +46,9 @@ const keywordInputElements = document.querySelectorAll('.jlf_keyword-input');
 const addKeywordBtnElements = document.querySelectorAll('.jlf_add-keyword-btn');
 const easyQuickApplyCheckbox = document.getElementById('jlf_easy-quick-apply');
 const excludePromotedCheckbox = document.getElementById('jlf_exclude-promoted');
+const onSiteCheckbox = document.getElementById('jlf_on-site');
+const hybridCheckbox = document.getElementById('jlf_hybrid');
+const remoteCheckbox = document.getElementById('jlf_remote');
 
 function addKeyword(inputId, keywordsListId, keyword) {
   if (keyword.trim() === '') return;
@@ -106,3 +109,16 @@ excludePromotedCheckbox.addEventListener('change', () => {
     excludePromotedCheckbox.checked
   );
 });
+
+function handleCheckboxChange() {
+  const selectedWorkTypes = [];
+  if (onSiteCheckbox.checked) selectedWorkTypes.push('On-Site');
+  if (hybridCheckbox.checked) selectedWorkTypes.push('Hybrid');
+  if (remoteCheckbox.checked) selectedWorkTypes.push('Remote');
+
+  console.log('Work types selected:', selectedWorkTypes.join(', '));
+}
+
+onSiteCheckbox.addEventListener('change', handleCheckboxChange);
+hybridCheckbox.addEventListener('change', handleCheckboxChange);
+remoteCheckbox.addEventListener('change', handleCheckboxChange);
