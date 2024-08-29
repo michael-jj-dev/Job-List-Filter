@@ -1,0 +1,92 @@
+#jlf_targetterBtn {
+  padding: 10px;
+  width: 100%;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 10px;
+  width: 320px;
+}
+
+.jlf_keyword-section-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.jlf_keyword-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.jlf_keyword-container h3 {
+  margin: 0 0 10px 0;
+  font-size: 14px;
+  font-weight: bold;
+  color: #333;
+}
+
+.jlf_keywords-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 10px;
+}
+
+.jlf_keyword-bubble {
+  background-color: #007bff;
+  color: white;
+  border-radius: 15px;
+  padding: 5px 10px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.jlf_keyword-bubble button {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.jlf_input-wrapper {
+  display: flex;
+  align-items: center;
+}
+
+.jlf_keyword-input {
+  border: 1px solid #ccc;
+  padding: 5px;
+  border-radius: 5px;
+  width: calc(100% - 45px);
+}
+
+.jlf_add-keyword-btn {
+  border: none;
+  padding: 5px 10px;
+  background-color: #007bff;
+  color: white;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.jlf_additional-options {
+  margin-top: 20px;
+}
+
+.jlf_option {
+  margin-bottom: 10px;
+}
+
+.jlf_option input {
+  margin-right: 10px;
+}
+
+.jlf_checkbox-row {
+  display: flex;
+  gap: 15px;
+}
