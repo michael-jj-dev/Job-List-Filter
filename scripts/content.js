@@ -11,13 +11,59 @@ let observeMutations = false;
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initializeScript);
 } else {
-  initializeScript();
+  setTimeout(() => {
+    initializeScript();
+  }, 3000); // 3000 milliseconds = 3 seconds
 }
 
-function initializeScript() {
-  console.log('Content script has been injected and DOM is fully loaded.');
+function initializeScript(minChildrenCount = 10, minFirstChildDescendants = 5) {
+  console.time('findElementWithMatchingChildren'); // Start the timer
 
-  //TODO: check if attribuitions is null or in storage
+  //const allElements = document.body.getElementsByTagName('*');
+
+  const allDivElements = document.body.getElementsByTagName('div');
+  const allUlElements = document.body.getElementsByTagName('ul');
+
+  const allElements = [...allDivElements, ...allUlElements]; // Combine div and ul elements
+
+  console.log(allElements.length);
+
+  for (let element of allElements) {
+    // const directChildren = Array.from(element.children).filter(
+    //   (child) => child.nodeType === 1
+    // );
+
+    if (element.children.length >= minChildrenCount) {
+      //const firstChildTag = element.children[0].tagName.toLowerCase();
+
+      // Check if all direct children have the same tag name
+      // const allChildrenMatch = directChildren.every(
+      //   (child) => child.tagName.toLowerCase() === firstChildTag
+      // );
+
+      //if (allChildrenMatch) {
+      // Check if the first child has at least minFirstChildDescendants children
+      const firstChildDescendants =
+        element.children[4].getElementsByTagName('*');
+
+      if (firstChildDescendants.length >= minFirstChildDescendants) {
+        console.log(
+          'Found an element with at least',
+          minChildrenCount,
+          'direct children of the same tag type:',
+          element
+        );
+
+        console.timeEnd('findElementWithMatchingChildren');
+        return;
+      }
+      //}
+    }
+  }
+
+  console.log('Finished checking all elements.');
+  console.timeEnd('findElementWithMatchingChildren'); // End the timer and log the time taken
+  //}, 3000); // 3000 milliseconds = 3 seconds
 }
 
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
