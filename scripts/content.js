@@ -137,7 +137,7 @@ function onMutation(mutationsList, observer) {
     bodyMutationTimeout = setTimeout(() => {
       bodyMutationStopped = true;
       console.log('Mutations have stopped:', bodyMutationStopped);
-    }, 1000);
+    }, 100);
   }
 }
 
