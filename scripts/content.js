@@ -3,7 +3,6 @@ var port = chrome.runtime.connect({ name: 'knockknock' });
 const manifest = chrome.runtime.getManifest();
 const version = manifest.version;
 
-let targetterEnabled = false;
 let attribuitions = null; //TOOD: null or {}?
 let highlightedElement = null;
 let observeMutations = false;
@@ -90,15 +89,6 @@ htmlElement.addEventListener(
   'click',
   (event) => {
     const targetId = event.target.id;
-
-    if (targetId && targetId.startsWith('jlf_')) {
-      return;
-    }
-
-    if (targetterEnabled) {
-      const listing = findNearestListing(event.target);
-      const listingsAttributes = getElementAttributes(listing);
-    }
   },
   true
 );
@@ -124,35 +114,6 @@ function onMutation(mutationsList, observer) {
 
 function listingMutated() {
   console.log('listingMutated');
-}
-
-function findNearestListing(element) {
-  var currentElement = element.parentElement;
-
-  while (currentElement !== null) {
-    if (currentElement.tagName.toLowerCase() === 'ul') {
-      return currentElement;
-    }
-    currentElement = currentElement.parentElement;
-  }
-
-  currentElement = element.parentElement;
-
-  while (currentElement !== null) {
-    if (currentElement.tagName.toLowerCase() === 'div') {
-      const children = Array.from(currentElement.children);
-      const divChildren = children.filter(
-        (child) => child.tagName.toLowerCase() === 'div'
-      );
-
-      if (divChildren.length >= 10 && children.length === divChildren.length) {
-        return currentElement;
-      }
-    }
-    currentElement = currentElement.parentElement;
-  }
-
-  return null;
 }
 
 function getElementAttributes(element) {
