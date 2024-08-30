@@ -107,13 +107,9 @@ function onMutation(mutationsList, observer) {
 
       if (!isRelevantNode) return;
 
-      listingMutated();
+      console.log('listingMutated');
     });
   });
-}
-
-function listingMutated() {
-  console.log('listingMutated');
 }
 
 function getElementAttributes(element) {
