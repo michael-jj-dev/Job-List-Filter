@@ -9,61 +9,60 @@ let highlightedElement = null;
 let observeMutations = false;
 
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initializeScript);
+  document.addEventListener('DOMContentLoaded', automaticListingFinder);
 } else {
   setTimeout(() => {
-    initializeScript();
-  }, 3000); // 3000 milliseconds = 3 seconds
+    automaticListingFinder();
+  }, 3000);
 }
 
-function initializeScript(minChildrenCount = 10, minFirstChildDescendants = 5) {
-  console.time('findElementWithMatchingChildren'); // Start the timer
-
-  //const allElements = document.body.getElementsByTagName('*');
+function automaticListingFinder(
+  minChildrenCount = 10,
+  minFirstChildDescendants = 10
+) {
+  console.time('findElementWithMatchingChildren');
 
   const allDivElements = document.body.getElementsByTagName('div');
   const allUlElements = document.body.getElementsByTagName('ul');
 
-  const allElements = [...allDivElements, ...allUlElements]; // Combine div and ul elements
-
-  console.log(allElements.length);
+  const allElements = [...allDivElements, ...allUlElements];
 
   for (let element of allElements) {
-    // const directChildren = Array.from(element.children).filter(
-    //   (child) => child.nodeType === 1
-    // );
+    //TODO: add filter that looks for elements that are not visible
+    const directChildren = element.children;
+    //TODO: find the most common child element type, which is most likely to be the actual list type. Use that index to check.
+    const childIndexToCheck = 3;
 
-    if (element.children.length >= minChildrenCount) {
-      //const firstChildTag = element.children[0].tagName.toLowerCase();
+    if (directChildren.length >= minChildrenCount) {
+      const middleChildTag =
+        directChildren[childIndexToCheck].tagName.toLowerCase();
 
-      // Check if all direct children have the same tag name
-      // const allChildrenMatch = directChildren.every(
-      //   (child) => child.tagName.toLowerCase() === firstChildTag
-      // );
+      const matchingChildrenCount = Array.from(directChildren).filter(
+        (child) => child.tagName.toLowerCase() === middleChildTag
+      ).length;
 
-      //if (allChildrenMatch) {
-      // Check if the first child has at least minFirstChildDescendants children
-      const firstChildDescendants =
-        element.children[4].getElementsByTagName('*');
+      const matchingPercentage =
+        (matchingChildrenCount / directChildren.length) * 100;
 
-      if (firstChildDescendants.length >= minFirstChildDescendants) {
+      if (matchingPercentage < 90) continue;
+
+      const middleChildDescendants =
+        directChildren[childIndexToCheck].getElementsByTagName('*');
+
+      if (middleChildDescendants.length >= minFirstChildDescendants) {
+        //TODO: include tie breakers. prioritise css selector with 'job'.
         console.log(
           'Found an element with at least',
           minChildrenCount,
           'direct children of the same tag type:',
           element
         );
-
         console.timeEnd('findElementWithMatchingChildren');
         return;
       }
-      //}
     }
   }
-
-  console.log('Finished checking all elements.');
-  console.timeEnd('findElementWithMatchingChildren'); // End the timer and log the time taken
-  //}, 3000); // 3000 milliseconds = 3 seconds
+  console.timeEnd('findElementWithMatchingChildren');
 }
 
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
