@@ -11,9 +11,9 @@ chrome.runtime.onConnect.addListener(function (port) {
 
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   //one-time connection
-  if (request.action === 'toggleTargetter') {
-    chrome.tabs.sendMessage(request.tabId, {
-      action: request.action
-    });
-  }
+  // if (request.action === 'toggleTargetter') {
+  //   chrome.tabs.sendMessage(request.tabId, {
+  //     action: request.action
+  //   });
+  // }
 });

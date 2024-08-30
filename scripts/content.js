@@ -66,12 +66,7 @@ function automaticListingFinder(
 }
 
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
-  removeListingHighlight();
-  if (request.action === 'toggleTargetter') {
-    targetterEnabled = true;
-
-    injectPrompt();
-  }
+  console.log(request.action);
 });
 
 function injectUI(htmlPath, cssPath, containerId, callback) {
