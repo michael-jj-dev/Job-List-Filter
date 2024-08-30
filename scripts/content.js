@@ -8,11 +8,8 @@ let highlightedElement = null;
 let observeMutations = false;
 
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', automaticListingFinder);
+  //document.addEventListener('DOMContentLoaded', () => {});
 } else {
-  setTimeout(() => {
-    automaticListingFinder();
-  }, 3000);
 }
 
 function automaticListingFinder(
@@ -65,7 +62,9 @@ function automaticListingFinder(
 }
 
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
-  console.log(request.action);
+  if (request.action === 'findList') {
+    automaticListingFinder();
+  }
 });
 
 function removeListingHighlight() {
