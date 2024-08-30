@@ -7,6 +7,9 @@ let attribuitions = null; //TOOD: null or {}?
 let highlightedElement = null;
 let observeMutations = false;
 
+let bodyMutationTimeout;
+let bodyMutationStopped = false;
+
 if (document.readyState === 'loading') {
   //document.addEventListener('DOMContentLoaded', () => {});
 } else {
@@ -92,7 +95,23 @@ htmlElement.addEventListener(
   true
 );
 
+function getElementAttributes(element) {
+  let attributesObj = {};
+
+  if (element === null || element.attributes === null) {
+    return null;
+  } else {
+    Array.from(element.attributes).forEach((attr) => {
+      attributesObj[attr.name] = attr.value;
+    });
+
+    return attributesObj;
+  }
+}
+
 function onMutation(mutationsList, observer) {
+  let relevantNodeFound = false;
+
   mutationsList.forEach((mutation) => {
     const isChildListMutation = mutation.type === 'childList';
     const hasAddedNodes = mutation.addedNodes.length > 0;
@@ -106,22 +125,19 @@ function onMutation(mutationsList, observer) {
 
       if (!isRelevantNode) return;
 
-      console.log('listingMutated');
+      bodyMutationStopped = false;
+      relevantNodeFound = true;
+
+      console.log('listingMutated: ' + bodyMutationStopped);
     });
   });
-}
 
-function getElementAttributes(element) {
-  let attributesObj = {};
-
-  if (element === null || element.attributes === null) {
-    return null;
-  } else {
-    Array.from(element.attributes).forEach((attr) => {
-      attributesObj[attr.name] = attr.value;
-    });
-
-    return attributesObj;
+  if (relevantNodeFound) {
+    clearTimeout(bodyMutationTimeout);
+    bodyMutationTimeout = setTimeout(() => {
+      bodyMutationStopped = true;
+      console.log('Mutations have stopped:', bodyMutationStopped);
+    }, 1000);
   }
 }
 
