@@ -10,10 +10,7 @@ let observeMutations = false;
 let bodyMutationTimeout;
 let bodyMutationStopped = false;
 
-if (document.readyState === 'loading') {
-  //document.addEventListener('DOMContentLoaded', () => {});
-} else {
-}
+let listingFound = false;
 
 function automaticListingFinder(
   minChildrenCount = 10,
@@ -57,18 +54,19 @@ function automaticListingFinder(
           element
         );
         console.timeEnd('findElementWithMatchingChildren');
-        return;
+        return element;
       }
     }
   }
-  console.timeEnd('findElementWithMatchingChildren');
+
+  return null;
 }
 
-chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
-  if (request.action === 'findList') {
-    automaticListingFinder();
-  }
-});
+chrome.runtime.onMessage.addListener(function (
+  request,
+  sender,
+  sendResponse
+) {});
 
 function removeListingHighlight() {
   if (highlightedElement) {
@@ -109,6 +107,18 @@ function getElementAttributes(element) {
   }
 }
 
+function onMutationStabilized(mutationsList, observer) {
+  console.log('onMutationStabilized');
+  console.log(listingFound);
+  if (!listingFound) {
+    const listing = automaticListingFinder();
+
+    if (listing !== null) {
+      listingFound = true;
+    }
+  }
+}
+
 function onMutation(mutationsList, observer) {
   let relevantNodeFound = false;
 
@@ -127,8 +137,6 @@ function onMutation(mutationsList, observer) {
 
       bodyMutationStopped = false;
       relevantNodeFound = true;
-
-      console.log('listingMutated: ' + bodyMutationStopped);
     });
   });
 
@@ -136,8 +144,8 @@ function onMutation(mutationsList, observer) {
     clearTimeout(bodyMutationTimeout);
     bodyMutationTimeout = setTimeout(() => {
       bodyMutationStopped = true;
-      console.log('Mutations have stopped:', bodyMutationStopped);
-    }, 100);
+      onMutationStabilized();
+    }, 500);
   }
 }
 
