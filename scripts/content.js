@@ -12,6 +12,10 @@ let bodyMutationStopped = false;
 
 let listingFound = false;
 
+function initializeContent() {
+  console.log('initializeContent');
+}
+
 function automaticListingFinder(
   minChildrenCount = 10,
   minFirstChildDescendants = 10
@@ -114,7 +118,10 @@ function onMutationStabilized(mutationsList, observer) {
     const listing = automaticListingFinder();
 
     if (listing !== null) {
+      highlightListing(listing);
       listingFound = true;
+      //TODO: get and store attributes
+      //TODO: inject popup
     }
   }
 }
@@ -149,5 +156,6 @@ function onMutation(mutationsList, observer) {
   }
 }
 
+initializeContent();
 const observer = new MutationObserver(onMutation);
 observer.observe(document.body, { childList: true, subtree: true });
