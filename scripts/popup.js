@@ -15,14 +15,16 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-// document.getElementById('targetterBtn').addEventListener('click', () => {
-//   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-//     chrome.tabs.sendMessage(tabs[0].id, {
-//       action: 'toggleTargetter'
-//     });
-//   });
-//   window.close();
-// });
+document
+  .getElementById('jlf_find_list_button')
+  .addEventListener('click', () => {
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      chrome.tabs.sendMessage(tabs[0].id, {
+        action: 'findList'
+      });
+    });
+    window.close();
+  });
 
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   if (request.action === 'sendListingAttributes') {

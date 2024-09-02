@@ -3,168 +3,74 @@ var port = chrome.runtime.connect({ name: 'knockknock' });
 const manifest = chrome.runtime.getManifest();
 const version = manifest.version;
 
-let targetterEnabled = false;
 let attribuitions = null; //TOOD: null or {}?
 let highlightedElement = null;
 let observeMutations = false;
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initializeScript);
-} else {
-  initializeScript();
+let bodyMutationTimeout;
+let bodyMutationStopped = false;
+
+let listingFound = false;
+
+function initializeContent() {
+  console.log('initializeContent');
 }
 
-function initializeScript() {
-  console.log('Content script has been injected and DOM is fully loaded.');
+function automaticListingFinder(
+  minChildrenCount = 10,
+  minFirstChildDescendants = 10
+) {
+  console.time('findElementWithMatchingChildren');
 
-  //TODO: check if attribuitions is null or in storage
-}
+  const allDivElements = document.body.getElementsByTagName('div');
+  const allUlElements = document.body.getElementsByTagName('ul');
 
-chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
-  removeListingHighlight();
-  if (request.action === 'toggleTargetter') {
-    targetterEnabled = true;
+  const allElements = [...allDivElements, ...allUlElements];
 
-    injectPrompt();
-  }
-});
+  for (let element of allElements) {
+    //TODO: add filter that looks for elements that are not visible
+    const directChildren = element.children;
+    //TODO: find the most common child element type, which is most likely to be the actual list type. Use that index to check.
+    const childIndexToCheck = 3;
 
-function injectUI(htmlPath, cssPath, containerId, callback) {
-  //TODO: this will eventually have to become one persistent UI with its values being changed, instead of reinjecting containers each call
-  fetch(chrome.runtime.getURL(htmlPath))
-    .then((response) => response.text())
-    .then((html) => {
-      const existingContainer = document.getElementById(containerId);
-      if (existingContainer) {
-        existingContainer.remove();
-      }
+    if (directChildren.length >= minChildrenCount) {
+      const middleChildTag =
+        directChildren[childIndexToCheck].tagName.toLowerCase();
 
-      const container = document.createElement('div');
-      container.id = containerId;
-      container.innerHTML = html;
-      document.body.appendChild(container);
+      const matchingChildrenCount = Array.from(directChildren).filter(
+        (child) => child.tagName.toLowerCase() === middleChildTag
+      ).length;
 
-      const closeButton = document.createElement('button'); //TODO: move this to its own component
-      closeButton.id = 'jlf_close_container_button';
-      closeButton.textContent = 'X';
-      closeButton.style.position = 'absolute';
-      closeButton.style.top = '10px';
-      closeButton.style.right = '10px';
-      closeButton.style.zIndex = '1000';
-      closeButton.style.background = 'red';
-      closeButton.style.color = 'white';
-      closeButton.style.border = 'none';
-      closeButton.style.borderRadius = '50%';
-      closeButton.style.width = '20px';
-      closeButton.style.height = '20px';
-      closeButton.style.cursor = 'pointer';
+      const matchingPercentage =
+        (matchingChildrenCount / directChildren.length) * 100;
 
-      closeButton.addEventListener('click', containerClosed);
+      if (matchingPercentage < 90) continue;
 
-      container.appendChild(closeButton);
+      const middleChildDescendants =
+        directChildren[childIndexToCheck].getElementsByTagName('*');
 
-      return fetch(chrome.runtime.getURL(cssPath));
-    })
-    .then((response) => response.text())
-    .then((css) => {
-      const style = document.createElement('style');
-      style.textContent = css;
-      document.head.appendChild(style);
-
-      if (typeof callback === 'function') {
-        callback();
-      }
-    })
-    .catch((error) =>
-      console.error(`Failed to load resources for ${containerId}:`, error)
-    );
-}
-
-function containerClosed() {
-  //TODO: what needs to be reset here
-  removeListingHighlight();
-  targetterEnabled = false;
-  removeUI();
-}
-
-function removeUI() {
-  const promptContainer = document.getElementById('jlf_prompt_container');
-  const retryPromptContainer = document.getElementById(
-    'jlf_retry_prompt_container'
-  );
-  const confirmationContainer = document.getElementById(
-    'jlf_confirmation_container'
-  );
-
-  if (promptContainer) {
-    promptContainer.remove();
-  }
-  if (retryPromptContainer) {
-    retryPromptContainer.remove();
-  }
-  if (confirmationContainer) {
-    confirmationContainer.remove();
-  }
-}
-
-function injectPrompt() {
-  removeUI();
-  injectUI(
-    'ui/prompt/prompt.html',
-    'ui/prompt/prompt.css',
-    'jlf_prompt_container'
-  );
-}
-
-function injectRetryPrompt() {
-  removeUI();
-  injectUI(
-    'ui/retryPrompt/retryPrompt.html',
-    'ui/retryPrompt/retryPrompt.css',
-    'jlf_retry_prompt_container'
-  );
-}
-
-function injectConfirmation(listingsAttributes) {
-  removeUI();
-  injectUI(
-    'ui/confirmation/confirmation.html',
-    'ui/confirmation/confirmation.css',
-    'jlf_confirmation_container',
-    () => {
-      const confirmButton = document.getElementById(
-        'jlf_confirmation_container_confirm_button'
-      );
-      const declineButton = document.getElementById(
-        'jlf_confirmation_container_decline_button'
-      );
-
-      if (confirmButton) {
-        confirmButton.addEventListener('click', () =>
-          onConfirmClick(listingsAttributes)
+      if (middleChildDescendants.length >= minFirstChildDescendants) {
+        //TODO: include tie breakers. prioritise css selector with 'job'.
+        console.log(
+          'Found an element with at least',
+          minChildrenCount,
+          'direct children of the same tag type:',
+          element
         );
-      }
-      if (declineButton) {
-        declineButton.addEventListener('click', onDeclineClick);
+        console.timeEnd('findElementWithMatchingChildren');
+        return element;
       }
     }
-  );
+  }
+
+  return null;
 }
 
-function onConfirmClick(listingsAttributes) {
-  attribuitions = listingsAttributes; //TODO: attribuitions or attributes
-  console.log(listingsAttributes);
-  removeUI();
-
-  //TODO: add temporary prompt that automatically disappears after a couple of seconds
-}
-
-function onDeclineClick() {
-  removeUI();
-  injectPrompt();
-  removeListingHighlight();
-  targetterEnabled = true;
-}
+chrome.runtime.onMessage.addListener(function (
+  request,
+  sender,
+  sendResponse
+) {});
 
 function removeListingHighlight() {
   if (highlightedElement) {
@@ -187,79 +93,9 @@ htmlElement.addEventListener(
   'click',
   (event) => {
     const targetId = event.target.id;
-
-    if (targetId && targetId.startsWith('jlf_')) {
-      return;
-    }
-
-    if (targetterEnabled) {
-      const listing = findNearestListing(event.target);
-      const listingsAttributes = getElementAttributes(listing);
-
-      if (listingsAttributes === null) {
-        injectRetryPrompt();
-      } else {
-        targetterEnabled = false;
-
-        highlightListing(listing);
-        injectConfirmation(listingsAttributes);
-      }
-    }
   },
   true
 );
-
-function onMutation(mutationsList, observer) {
-  mutationsList.forEach((mutation) => {
-    const isChildListMutation = mutation.type === 'childList';
-    const hasAddedNodes = mutation.addedNodes.length > 0;
-    const isRelevantTarget =
-      mutation.target.nodeName === 'LI' || mutation.target.nodeName === 'DIV';
-
-    if (!isChildListMutation || !hasAddedNodes || !isRelevantTarget) return;
-
-    mutation.addedNodes.forEach((node) => {
-      const isRelevantNode = node.nodeName === 'LI' || node.nodeName === 'DIV';
-
-      if (!isRelevantNode) return;
-
-      listingMutated();
-    });
-  });
-}
-
-function listingMutated() {
-  console.log('listingMutated');
-}
-
-function findNearestListing(element) {
-  var currentElement = element.parentElement;
-
-  while (currentElement !== null) {
-    if (currentElement.tagName.toLowerCase() === 'ul') {
-      return currentElement;
-    }
-    currentElement = currentElement.parentElement;
-  }
-
-  currentElement = element.parentElement;
-
-  while (currentElement !== null) {
-    if (currentElement.tagName.toLowerCase() === 'div') {
-      const children = Array.from(currentElement.children);
-      const divChildren = children.filter(
-        (child) => child.tagName.toLowerCase() === 'div'
-      );
-
-      if (divChildren.length >= 10 && children.length === divChildren.length) {
-        return currentElement;
-      }
-    }
-    currentElement = currentElement.parentElement;
-  }
-
-  return null;
-}
 
 function getElementAttributes(element) {
   let attributesObj = {};
@@ -275,5 +111,51 @@ function getElementAttributes(element) {
   }
 }
 
+function onMutationStabilized(mutationsList, observer) {
+  console.log('onMutationStabilized');
+  console.log(listingFound);
+  if (!listingFound) {
+    const listing = automaticListingFinder();
+
+    if (listing !== null) {
+      highlightListing(listing);
+      listingFound = true;
+      //TODO: get and store attributes
+      //TODO: inject popup
+    }
+  }
+}
+
+function onMutation(mutationsList, observer) {
+  let relevantNodeFound = false;
+
+  mutationsList.forEach((mutation) => {
+    const isChildListMutation = mutation.type === 'childList';
+    const hasAddedNodes = mutation.addedNodes.length > 0;
+    const isRelevantTarget =
+      mutation.target.nodeName === 'LI' || mutation.target.nodeName === 'DIV';
+
+    if (!isChildListMutation || !hasAddedNodes || !isRelevantTarget) return;
+
+    mutation.addedNodes.forEach((node) => {
+      const isRelevantNode = node.nodeName === 'LI' || node.nodeName === 'DIV';
+
+      if (!isRelevantNode) return;
+
+      bodyMutationStopped = false;
+      relevantNodeFound = true;
+    });
+  });
+
+  if (relevantNodeFound) {
+    clearTimeout(bodyMutationTimeout);
+    bodyMutationTimeout = setTimeout(() => {
+      bodyMutationStopped = true;
+      onMutationStabilized();
+    }, 500);
+  }
+}
+
+initializeContent();
 const observer = new MutationObserver(onMutation);
 observer.observe(document.body, { childList: true, subtree: true });
