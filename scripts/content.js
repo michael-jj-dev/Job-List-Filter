@@ -16,56 +16,6 @@ function initializeContent() {
   console.log('initializeContent');
 }
 
-function automaticListingFinder(
-  minChildrenCount = 10,
-  minFirstChildDescendants = 10
-) {
-  console.time('findElementWithMatchingChildren');
-
-  const allDivElements = document.body.getElementsByTagName('div');
-  const allUlElements = document.body.getElementsByTagName('ul');
-
-  const allElements = [...allDivElements, ...allUlElements];
-
-  for (let element of allElements) {
-    //TODO: add filter that looks for elements that are not visible
-    const directChildren = element.children;
-    //TODO: find the most common child element type, which is most likely to be the actual list type. Use that index to check.
-    const childIndexToCheck = 3;
-
-    if (directChildren.length >= minChildrenCount) {
-      const middleChildTag =
-        directChildren[childIndexToCheck].tagName.toLowerCase();
-
-      const matchingChildrenCount = Array.from(directChildren).filter(
-        (child) => child.tagName.toLowerCase() === middleChildTag
-      ).length;
-
-      const matchingPercentage =
-        (matchingChildrenCount / directChildren.length) * 100;
-
-      if (matchingPercentage < 90) continue;
-
-      const middleChildDescendants =
-        directChildren[childIndexToCheck].getElementsByTagName('*');
-
-      if (middleChildDescendants.length >= minFirstChildDescendants) {
-        //TODO: include tie breakers. prioritise css selector with 'job'.
-        console.log(
-          'Found an element with at least',
-          minChildrenCount,
-          'direct children of the same tag type:',
-          element
-        );
-        console.timeEnd('findElementWithMatchingChildren');
-        return element;
-      }
-    }
-  }
-
-  return null;
-}
-
 chrome.runtime.onMessage.addListener(function (
   request,
   sender,
@@ -111,19 +61,146 @@ function getElementAttributes(element) {
   }
 }
 
-function onMutationStabilized(mutationsList, observer) {
-  console.log('onMutationStabilized');
-  console.log(listingFound);
-  if (!listingFound) {
-    const listing = automaticListingFinder();
+let nodeCount = 0;
 
-    if (listing !== null) {
-      highlightListing(listing);
-      listingFound = true;
-      //TODO: get and store attributes
-      //TODO: inject popup
+function isListing(node) {
+  if (!node || node.nodeType !== Node.ELEMENT_NODE) return;
+
+  nodeCount++;
+
+  const attributes = node.attributes;
+  const attributeList = {};
+
+  for (let i = 0; i < attributes.length; i++) {
+    const attr = attributes[i];
+    attributeList[attr.name] = attr.value;
+  }
+
+  node.setAttribute('jlf-found', 'found-tag');
+
+  if (node.nodeType === Node.ELEMENT_NODE) {
+    node.childNodes.forEach((child) => traverseNodes(child));
+  }
+}
+
+function containsMoney(text) {
+  const moneyRegex = /\$\d+/g;
+
+  return moneyRegex.test(text);
+}
+
+function containsTimeAgo(text) {
+  const timeAgoRegex = /(second|minute|hour|day|month|year)s?ago/g;
+
+  return timeAgoRegex.test(text);
+}
+
+function containsWorkLocation(text) {
+  const workLocationRegex = new RegExp(
+    [
+      'on[-]?site',
+      'onsite',
+      'officebased',
+      'inoffice',
+      'atoffice',
+      'workonsite',
+      'onlocation',
+      'fullyremote',
+      'remote',
+      'remotework',
+      'workremotely',
+      'workfromhome',
+      'wfh',
+      'telecommute',
+      'remoteoption',
+      'remoteavailable',
+      'remotefriendly',
+      'homebased',
+      'hybrid',
+      'hybridwork',
+      'workhybrid',
+      'hybridremote',
+      'partialremote',
+      'flexiblelocation',
+      'combinationofremoteandonsite',
+      'mixofremoteandin[-]?office'
+    ].join('|'),
+    'i'
+  );
+
+  return workLocationRegex.test(text);
+}
+
+function extractCityStateFromSubstring(text) {
+  const cityStateRegex = /[A-Z][a-zA-Z-]*,[A-Z]{2}/g;
+  return cityStateRegex.test(text);
+}
+
+function isListingCell(element) {
+  const descendants = element.querySelectorAll('*');
+  const text = element.textContent.trim().replace(/\s+/g, '');
+
+  if (descendants.length < 10 || descendants.length > 100) {
+    return false;
+  }
+
+  for (let i = 0; i < element.attributes.length; i++) {
+    const attr = element.attributes[i];
+    if (
+      attr.name.toLowerCase().includes('job') ||
+      attr.value.toLowerCase().includes('job')
+    ) {
+      const hasMoney = containsMoney(text);
+      const hasTimeAgo = containsTimeAgo(text);
+      const hasWorkLocation = containsWorkLocation(text);
+      const hasCityState = extractCityStateFromSubstring(text);
+
+      if (hasMoney || hasTimeAgo || hasWorkLocation || hasCityState) {
+        console.log(element);
+        console.log(text);
+        console.log('hasMoney: ' + hasMoney);
+        console.log('hasTimeAgo: ' + hasTimeAgo);
+        console.log('hasWorkLocation: ' + hasWorkLocation);
+        console.log('hasCityState: ' + hasCityState);
+        console.log(descendants.length);
+        console.log('==================');
+      } else {
+        console.log(element);
+        console.log('==================');
+      }
+      return true;
     }
   }
+
+  // TODO: potentially add text length limits and child list limits
+
+  //node.setAttribute('jlf-found', 'found-tag');
+
+  return true;
+}
+
+function onMutationStabilized(mutationsList, observer) {
+  console.log('onMutationStabilized');
+  console.time('findElementWithMatchingChildren');
+
+  // TODO: some sites do not mention 'job', so in those cases, we may need to look at all elements.
+  const allDivElements = document.body.getElementsByTagName('div');
+  const allUlElements = document.body.getElementsByTagName('ul');
+  const allArticleElements = document.body.getElementsByTagName('article');
+
+  const allElements = [
+    ...allDivElements,
+    ...allUlElements,
+    ...allArticleElements
+  ];
+
+  for (let element of allElements) {
+    if (!element.hasAttribute('jlf-found')) {
+      isListingCell(element);
+    }
+  }
+
+  console.timeEnd('findElementWithMatchingChildren');
 }
 
 function onMutation(mutationsList, observer) {
