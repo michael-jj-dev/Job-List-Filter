@@ -139,7 +139,6 @@ function extractCityStateFromSubstring(text) {
 function highlightListingCell(element) {
   element.style.backgroundColor = '#d0f0c0';
   element.style.borderRadius = '4px';
-  element.style.boxShadow = '0 0 5px rgba(0, 128, 0, 0.5)';
 }
 
 function isListingCell(element) {
@@ -163,6 +162,7 @@ function isListingCell(element) {
 
     if (hasMoney || hasTimeAgo || hasWorkLocation || hasCityState) {
       highlightListingCell(element);
+      highlightListingCell(element.children[0]);
 
       console.log(element);
       console.log(text);
