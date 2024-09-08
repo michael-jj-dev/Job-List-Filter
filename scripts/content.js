@@ -146,45 +146,41 @@ function isListingCell(element) {
   const descendants = element.querySelectorAll('*');
   const text = element.textContent.trim().replace(/\s+/g, '');
 
-  if (descendants.length < 10 || descendants.length > 100) {
-    return false;
-  }
-
-  for (let i = 0; i < element.attributes.length; i++) {
-    const attr = element.attributes[i];
-    if (
+  const containsCorrectNumberOfDescendants =
+    descendants.length >= 10 && descendants.length <= 100;
+  const containsJob = Array.from(element.attributes).some(
+    (attr) =>
       attr.name.toLowerCase().includes('job') ||
       attr.value.toLowerCase().includes('job')
-    ) {
-      const hasMoney = containsMoney(text);
-      const hasTimeAgo = containsTimeAgo(text);
-      const hasWorkLocation = containsWorkLocation(text);
-      const hasCityState = extractCityStateFromSubstring(text);
+  );
 
-      if (hasMoney || hasTimeAgo || hasWorkLocation || hasCityState) {
-        highlightListingCell(element);
+  if (containsJob && containsCorrectNumberOfDescendants) {
+    const hasMoney = containsMoney(text);
+    const hasTimeAgo = containsTimeAgo(text);
+    const hasWorkLocation = containsWorkLocation(text);
+    const hasCityState = extractCityStateFromSubstring(text);
+    // TODO: potentially add text length limits and child list limits
 
-        console.log(element);
-        console.log(text);
-        console.log('hasMoney: ' + hasMoney);
-        console.log('hasTimeAgo: ' + hasTimeAgo);
-        console.log('hasWorkLocation: ' + hasWorkLocation);
-        console.log('hasCityState: ' + hasCityState);
-        console.log(descendants.length);
-        console.log('==================');
-      } else {
-        console.log(element);
-        console.log('==================');
-      }
+    if (hasMoney || hasTimeAgo || hasWorkLocation || hasCityState) {
+      highlightListingCell(element);
+
+      console.log(element);
+      console.log(text);
+      console.log('descendants.length: ' + descendants.length);
+      console.log('hasMoney: ' + hasMoney);
+      console.log('hasTimeAgo: ' + hasTimeAgo);
+      console.log('hasWorkLocation: ' + hasWorkLocation);
+      console.log('hasCityState: ' + hasCityState);
+      console.log('==================');
+
       return true;
+    } else {
+      console.log(element);
+      console.log('==================');
     }
   }
 
-  // TODO: potentially add text length limits and child list limits
-
-  //node.setAttribute('jlf-found', 'found-tag');
-
-  return true;
+  return false;
 }
 
 function onMutationStabilized(mutationsList, observer) {
@@ -203,8 +199,10 @@ function onMutationStabilized(mutationsList, observer) {
   ];
 
   for (let element of allElements) {
-    if (!element.hasAttribute('jlf-found')) {
-      isListingCell(element);
+    if (!element.hasAttribute('jlf_element') && isListingCell(element)) {
+      element.setAttribute('jlf_element', 'jlf_listing-cell');
+    } else {
+      element.setAttribute('jlf_element', 'jlf_non-listing-cell');
     }
   }
 
@@ -237,7 +235,7 @@ function onMutation(mutationsList, observer) {
     bodyMutationTimeout = setTimeout(() => {
       bodyMutationStopped = true;
       onMutationStabilized();
-    }, 500);
+    }, 100); //TODO: verify if this limit has any effect
   }
 }
 
