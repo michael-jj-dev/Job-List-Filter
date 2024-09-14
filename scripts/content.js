@@ -155,9 +155,10 @@ function isListingCell(element) {
 
   if (containsJob && containsCorrectNumberOfDescendants) {
     const hasMoney = containsMoney(text);
-    const hasTimeAgo = containsTimeAgo(text);
+    const hasTimeAgo = containsTimeAgo(text); // TODO: needs to account for 5d ago, 4d, 3yr, etc
     const hasWorkLocation = containsWorkLocation(text);
     const hasCityState = extractCityStateFromSubstring(text);
+    // TODO: add another filter for general listing cell terms (Actively Hiring, Apply Now, etc)
     // TODO: potentially add text length limits and child list limits
 
     if (hasMoney || hasTimeAgo || hasWorkLocation || hasCityState) {
@@ -166,6 +167,7 @@ function isListingCell(element) {
 
       console.log(element);
       console.log(text);
+      console.log('text.length: ' + text.length);
       console.log('descendants.length: ' + descendants.length);
       console.log('hasMoney: ' + hasMoney);
       console.log('hasTimeAgo: ' + hasTimeAgo);
@@ -174,9 +176,6 @@ function isListingCell(element) {
       console.log('==================');
 
       return true;
-    } else {
-      console.log(element);
-      console.log('==================');
     }
   }
 
@@ -191,11 +190,13 @@ function onMutationStabilized(mutationsList, observer) {
   const allDivElements = document.body.getElementsByTagName('div');
   const allUlElements = document.body.getElementsByTagName('ul');
   const allArticleElements = document.body.getElementsByTagName('article');
+  const allLinkElements = document.body.getElementsByTagName('a');
 
   const allElements = [
     ...allDivElements,
     ...allUlElements,
-    ...allArticleElements
+    ...allArticleElements,
+    ...allLinkElements
   ];
 
   for (let element of allElements) {
