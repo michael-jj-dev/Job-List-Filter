@@ -91,8 +91,38 @@ function containsMoney(text) {
 
 function containsTimeAgo(text) {
   const timeAgoRegex = /(second|minute|hour|day|month|year)s?ago/g;
+  const abbreviationRegex = /\b\d+[smhdwy]\b/g;
+  const commonPhrasesRegex = /\b(yesterday|today)\b/g;
+  const timeWithUnitsRegex = /\b\d+\s(week|day|month|year)s?\sago\b/g;
 
-  return timeAgoRegex.test(text);
+  // New regexes to handle additional cases
+  const lastTimePeriodRegex = /\b(last\s(week|month|year))\b/g;
+  const fewTimeAgoRegex =
+    /\b(a\s(few|couple|several)\s(seconds?|minutes?|hours?|days?|weeks?|months?|years?)\sago)\b/g;
+  const justNowRegex = /\b(just\snow)\b/g;
+  const pastTimePeriodRegex =
+    /\b(in\s(the\s(past|last))\s\d+\s(day|week|month|year)s?)\b/g;
+  const standaloneTimeUnitsRegex = /\b\d+\s(week|month|year)s?\b/g;
+  const earlierTimePeriodRegex =
+    /\b(earlier\s(this\s(week|month|year|day)))\b/g;
+  const withinTimePeriodRegex =
+    /\b(within\s(the\s(last|past))\s\d+\s(day|week|month|year)s?)\b/g;
+  const recentlyRegex = /\b(recently|recent)\b/g;
+
+  return (
+    timeAgoRegex.test(text) ||
+    abbreviationRegex.test(text) ||
+    commonPhrasesRegex.test(text) ||
+    timeWithUnitsRegex.test(text) ||
+    lastTimePeriodRegex.test(text) ||
+    fewTimeAgoRegex.test(text) ||
+    justNowRegex.test(text) ||
+    pastTimePeriodRegex.test(text) ||
+    standaloneTimeUnitsRegex.test(text) ||
+    earlierTimePeriodRegex.test(text) ||
+    withinTimePeriodRegex.test(text) ||
+    recentlyRegex.test(text)
+  );
 }
 
 function containsWorkLocation(text) {
