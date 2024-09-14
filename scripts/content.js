@@ -212,6 +212,10 @@ function isListingCell(element) {
   return false;
 }
 
+function hasJobInTagName(element) {
+  return element.tagName.toLowerCase().includes('job');
+}
+
 function onMutationStabilized(mutationsList, observer) {
   console.log('onMutationStabilized');
   console.time('findElementWithMatchingChildren');
@@ -222,11 +226,20 @@ function onMutationStabilized(mutationsList, observer) {
   const allArticleElements = document.body.getElementsByTagName('article');
   const allLinkElements = document.body.getElementsByTagName('a');
 
+  const elementsWithJobInTagName = findElementsWithJobInTagName(document.body);
+  function findElementsWithJobInTagName(rootElement) {
+    const allElements = rootElement.getElementsByTagName('*'); // Get all elements under the root element
+    return Array.from(allElements).filter(hasJobInTagName); // Filter elements based on the tag name
+  }
+
+  console.log(elementsWithJobInTagName);
+
   const allElements = [
     ...allDivElements,
     ...allUlElements,
     ...allArticleElements,
-    ...allLinkElements
+    ...allLinkElements,
+    ...elementsWithJobInTagName
   ];
 
   for (let element of allElements) {
