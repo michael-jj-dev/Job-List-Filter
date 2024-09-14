@@ -10,7 +10,8 @@ let observeMutations = false;
 let bodyMutationTimeout;
 let bodyMutationStopped = false;
 
-let listingFound = false;
+let filterCellsForList = false;
+let listingNode = null;
 
 function initializeContent() {
   console.log('initializeContent');
@@ -216,31 +217,83 @@ function hasJobInTagName(element) {
   return element.tagName.toLowerCase().includes('job');
 }
 
+function automaticListingFinder(
+  element,
+  minChildrenCount = 10,
+  requiredPercentage = 70
+) {
+  const directChildren = [...element.children];
+
+  if (directChildren.length < minChildrenCount) return false;
+
+  const childrenWithEnoughDescendants = directChildren.filter((child) => {
+    const text = child.textContent.trim().replace(/\s+/g, '');
+
+    const hasMoney = containsMoney(text);
+    const hasTimeAgo = containsTimeAgo(text);
+    const hasWorkLocation = containsWorkLocation(text);
+    const hasCityState = extractCityStateFromSubstring(text);
+
+    return hasMoney || hasTimeAgo || hasWorkLocation || hasCityState;
+  }).length;
+
+  const sufficientChildrenPercentage =
+    (childrenWithEnoughDescendants / directChildren.length) * 100;
+
+  if (sufficientChildrenPercentage < requiredPercentage) return false;
+
+  listingNode = element;
+
+  return true;
+}
+
 function onMutationStabilized(mutationsList, observer) {
   console.log('onMutationStabilized');
   console.time('findElementWithMatchingChildren');
 
-  // TODO: some sites do not mention 'job', so in those cases, we may need to look at all elements.
-  const allDivElements = document.body.getElementsByTagName('div');
-  const allUlElements = document.body.getElementsByTagName('ul');
-  const allArticleElements = document.body.getElementsByTagName('article');
-  const allLinkElements = document.body.getElementsByTagName('a');
+  let allElements = [];
 
-  const elementsWithJobInTagName = findElementsWithJobInTagName(document.body);
-  function findElementsWithJobInTagName(rootElement) {
-    const allElements = rootElement.getElementsByTagName('*'); // Get all elements under the root element
-    return Array.from(allElements).filter(hasJobInTagName); // Filter elements based on the tag name
+  if (!filterCellsForList) {
+    const allDivElements = document.body.getElementsByTagName('div');
+    const allUlElements = document.body.getElementsByTagName('ul');
+    const allArticleElements = document.body.getElementsByTagName('article');
+    const allLinkElements = document.body.getElementsByTagName('a');
+    const elementsWithJobInTagName = findElementsWithJobInTagName(
+      document.body
+    );
+    function findElementsWithJobInTagName(rootElement) {
+      const allElements = rootElement.getElementsByTagName('*');
+      return Array.from(allElements).filter(hasJobInTagName);
+    }
+
+    allElements = [
+      ...allDivElements,
+      ...allUlElements,
+      ...allArticleElements,
+      ...allLinkElements,
+      ...elementsWithJobInTagName
+    ];
+  } else {
+    const allDivElements = listingNode.getElementsByTagName('div');
+    const allUlElements = listingNode.getElementsByTagName('ul');
+    const allArticleElements = listingNode.getElementsByTagName('article');
+    const allLinkElements = listingNode.getElementsByTagName('a');
+    const elementsWithJobInTagName = findElementsWithJobInTagName(listingNode);
+    function findElementsWithJobInTagName(rootElement) {
+      const allElements = rootElement.getElementsByTagName('*');
+      return Array.from(allElements).filter(hasJobInTagName);
+    }
+
+    allElements = [
+      ...allDivElements,
+      ...allUlElements,
+      ...allArticleElements,
+      ...allLinkElements,
+      ...elementsWithJobInTagName
+    ];
   }
 
-  console.log(elementsWithJobInTagName);
-
-  const allElements = [
-    ...allDivElements,
-    ...allUlElements,
-    ...allArticleElements,
-    ...allLinkElements,
-    ...elementsWithJobInTagName
-  ];
+  console.log(allElements);
 
   for (let element of allElements) {
     if (!element.hasAttribute('jlf_element') && isListingCell(element)) {
@@ -278,6 +331,13 @@ function onMutation(mutationsList, observer) {
     clearTimeout(bodyMutationTimeout);
     bodyMutationTimeout = setTimeout(() => {
       bodyMutationStopped = true;
+
+      const allUlElementsToSearch = document.body.getElementsByTagName('ul');
+      for (let element of allUlElementsToSearch) {
+        const listingFound = automaticListingFinder(element);
+        filterCellsForList = filterCellsForList || listingFound;
+      }
+
       onMutationStabilized();
     }, 100); //TODO: verify if this limit has any effect
   }
