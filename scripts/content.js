@@ -11,6 +11,7 @@ let bodyMutationTimeout;
 let bodyMutationStopped = false;
 
 let filterCellsForList = false;
+let listFindAttempts = 0;
 let listingNode = null;
 
 function initializeContent() {
@@ -234,10 +235,7 @@ function automaticListingFinder(
     return hasMoney || hasTimeAgo || hasWorkLocation || hasCityState;
   }).length;
 
-  const sufficientChildrenPercentage =
-    (childrenWithEnoughDescendants / directChildren.length) * 100;
-
-  if (sufficientChildrenPercentage < requiredPercentage) return false;
+  if (childrenWithEnoughDescendants < 5) return false;
 
   listingNode = element;
 
@@ -247,21 +245,35 @@ function automaticListingFinder(
 var cellsFound = 0;
 
 function onMutationStabilized(mutationsList, observer) {
-  //console.log('onMutationStabilized');
+  console.log('onMutationStabilized');
 
   let allElements = [];
 
-  if (!filterCellsForList) {
-    const allDivElements = document.body.getElementsByTagName('div');
-    const allUlElements = document.body.getElementsByTagName('ul');
-    const allArticleElements = document.body.getElementsByTagName('article');
-    const allLinkElements = document.body.getElementsByTagName('a');
+  if (!listingNode) {
+    console.log('looking in entire site');
+    const allDivElements = document.body.querySelectorAll(
+      'div:not([jlf_element])'
+    );
+    const allUlElements = document.body.querySelectorAll(
+      'ul:not([jlf_element])'
+    );
+    const allArticleElements = document.body.querySelectorAll(
+      'article:not([jlf_element])'
+    );
+    const allLinkElements = document.body.querySelectorAll(
+      'a:not([jlf_element])'
+    );
     const elementsWithJobInTagName = findElementsWithJobInTagName(
       document.body
     );
+
     function findElementsWithJobInTagName(rootElement) {
       const allElements = rootElement.getElementsByTagName('*');
-      return Array.from(allElements).filter(hasJobInTagName);
+
+      return Array.from(allElements).filter(
+        (element) =>
+          hasJobInTagName(element) && !element.hasAttribute('jlf_element')
+      );
     }
 
     allElements = [
@@ -272,14 +284,26 @@ function onMutationStabilized(mutationsList, observer) {
       ...elementsWithJobInTagName
     ];
   } else {
-    const allDivElements = listingNode.getElementsByTagName('div');
-    const allUlElements = listingNode.getElementsByTagName('ul');
-    const allArticleElements = listingNode.getElementsByTagName('article');
-    const allLinkElements = listingNode.getElementsByTagName('a');
+    console.log('looking in listing');
+    const allDivElements = listingNode.querySelectorAll(
+      'div:not([jlf_element])'
+    );
+    const allUlElements = listingNode.querySelectorAll('ul:not([jlf_element])');
+    const allArticleElements = listingNode.querySelectorAll(
+      'article:not([jlf_element])'
+    );
+    const allLinkElements = listingNode.querySelectorAll(
+      'a:not([jlf_element])'
+    );
     const elementsWithJobInTagName = findElementsWithJobInTagName(listingNode);
+
     function findElementsWithJobInTagName(rootElement) {
       const allElements = rootElement.getElementsByTagName('*');
-      return Array.from(allElements).filter(hasJobInTagName);
+
+      return Array.from(allElements).filter(
+        (element) =>
+          hasJobInTagName(element) && !element.hasAttribute('jlf_element')
+      );
     }
 
     allElements = [
@@ -296,7 +320,7 @@ function onMutationStabilized(mutationsList, observer) {
       cellsFound++;
       element.setAttribute('jlf_element', 'jlf_listing-cell');
     } else {
-      element.setAttribute('jlf_element', 'jlf_non-listing-cell');
+      element.setAttribute('jlf_element', 'jlf_non-job');
     }
   }
 }
@@ -329,11 +353,21 @@ function onMutation(mutationsList, observer) {
 
       bodyMutationStopped = true;
 
-      const allUlElementsToSearch = document.body.getElementsByTagName('ul');
-      if (!filterCellsForList) {
+      if (!listingNode && listFindAttempts < 5) {
+        const allUlElementsToSearch = document.body.querySelectorAll('ul');
+
+        let listingFound = false;
         for (let element of allUlElementsToSearch) {
-          const listingFound = automaticListingFinder(element);
-          filterCellsForList = filterCellsForList || listingFound;
+          listingFound = automaticListingFinder(element);
+          if (listingFound) {
+            element.setAttribute('jlf_element', 'jlf_job-listing');
+          } else {
+            element.setAttribute('jlf_element', 'jlf_non-job-listing');
+          }
+        }
+
+        if (!listingFound) {
+          listFindAttempts++;
         }
       }
 
