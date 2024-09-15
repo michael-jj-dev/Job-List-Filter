@@ -193,18 +193,15 @@ function isListingCell(element) {
     // TODO: potentially add text length limits and child list limits
 
     if (hasMoney || hasTimeAgo || hasWorkLocation || hasCityState) {
-      highlightListingCell(element);
-      highlightListingCell(element.children[0]);
-
-      console.log(element);
-      console.log(text);
-      console.log('text.length: ' + text.length);
-      console.log('descendants.length: ' + descendants.length);
-      console.log('hasMoney: ' + hasMoney);
-      console.log('hasTimeAgo: ' + hasTimeAgo);
-      console.log('hasWorkLocation: ' + hasWorkLocation);
-      console.log('hasCityState: ' + hasCityState);
-      console.log('==================');
+      // console.log(element);
+      // console.log(text);
+      // console.log('text.length: ' + text.length);
+      // console.log('descendants.length: ' + descendants.length);
+      // console.log('hasMoney: ' + hasMoney);
+      // console.log('hasTimeAgo: ' + hasTimeAgo);
+      // console.log('hasWorkLocation: ' + hasWorkLocation);
+      // console.log('hasCityState: ' + hasCityState);
+      // console.log('==================');
 
       return true;
     }
@@ -247,9 +244,10 @@ function automaticListingFinder(
   return true;
 }
 
+var cellsFound = 0;
+
 function onMutationStabilized(mutationsList, observer) {
-  console.log('onMutationStabilized');
-  console.time('findElementWithMatchingChildren');
+  //console.log('onMutationStabilized');
 
   let allElements = [];
 
@@ -293,17 +291,14 @@ function onMutationStabilized(mutationsList, observer) {
     ];
   }
 
-  console.log(allElements);
-
   for (let element of allElements) {
     if (!element.hasAttribute('jlf_element') && isListingCell(element)) {
+      cellsFound++;
       element.setAttribute('jlf_element', 'jlf_listing-cell');
     } else {
       element.setAttribute('jlf_element', 'jlf_non-listing-cell');
     }
   }
-
-  console.timeEnd('findElementWithMatchingChildren');
 }
 
 function onMutation(mutationsList, observer) {
@@ -330,15 +325,33 @@ function onMutation(mutationsList, observer) {
   if (relevantNodeFound) {
     clearTimeout(bodyMutationTimeout);
     bodyMutationTimeout = setTimeout(() => {
+      console.time('findElementWithMatchingChildren');
+
       bodyMutationStopped = true;
 
       const allUlElementsToSearch = document.body.getElementsByTagName('ul');
-      for (let element of allUlElementsToSearch) {
-        const listingFound = automaticListingFinder(element);
-        filterCellsForList = filterCellsForList || listingFound;
+      if (!filterCellsForList) {
+        for (let element of allUlElementsToSearch) {
+          const listingFound = automaticListingFinder(element);
+          filterCellsForList = filterCellsForList || listingFound;
+        }
       }
 
       onMutationStabilized();
+
+      if (cellsFound > 5) {
+        const elements = document.querySelectorAll(
+          '[jlf_element="jlf_listing-cell"]'
+        );
+
+        for (let element of elements) {
+          highlightListingCell(element);
+          highlightListingCell(element.children[0]);
+          element.setAttribute('jlf_element', 'jlf_listing-cell-color');
+        }
+      }
+
+      console.timeEnd('findElementWithMatchingChildren');
     }, 100); //TODO: verify if this limit has any effect
   }
 }
