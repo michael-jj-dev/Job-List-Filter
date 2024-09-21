@@ -14,6 +14,8 @@ let filterCellsForList = false;
 let listFindAttempts = 0;
 let listingNode = null;
 
+let sweepCount = 0;
+
 function initializeContent() {
   console.log('initializeContent');
 }
@@ -347,6 +349,8 @@ function onMutation(mutationsList, observer) {
   if (relevantNodeFound) {
     clearTimeout(bodyMutationTimeout);
     bodyMutationTimeout = setTimeout(() => {
+      if (sweepCount > 3 && cellsFound < 5) return;
+
       console.time('findElementWithMatchingChildren');
 
       bodyMutationStopped = true;
@@ -384,6 +388,8 @@ function onMutation(mutationsList, observer) {
       }
 
       console.timeEnd('findElementWithMatchingChildren');
+
+      sweepCount++;
     }, 100); //TODO: verify if this limit has any effect
   }
 }
