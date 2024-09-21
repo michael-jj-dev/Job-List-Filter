@@ -10,11 +10,12 @@ let observeMutations = false;
 let bodyMutationTimeout;
 let bodyMutationStopped = false;
 
-let filterCellsForList = false;
 let listFindAttempts = 0;
 let listingNode = null;
 
 let sweepCount = 0;
+
+let currentBaseUrl = window.location.origin + window.location.pathname;
 
 function initializeContent() {
   console.log('initializeContent');
@@ -25,6 +26,15 @@ chrome.runtime.onMessage.addListener(function (
   sender,
   sendResponse
 ) {});
+
+function onBaseUrlChange(newBaseUrl) {
+  currentBaseUrl = newBaseUrl;
+
+  listFindAttempts = 0;
+  listingNode = null;
+
+  sweepCount = 0;
+}
 
 function removeListingHighlight() {
   if (highlightedElement) {
@@ -245,8 +255,6 @@ function automaticListingFinder(element, minChildrenCount = 10) {
 var cellsFound = 0;
 
 function onMutationStabilized(mutationsList, observer) {
-  console.log('onMutationStabilized');
-
   let allElements = [];
 
   if (!listingNode) {
@@ -351,6 +359,13 @@ function onMutation(mutationsList, observer) {
     bodyMutationTimeout = setTimeout(() => {
       if (sweepCount > 3 && cellsFound < 5) return;
 
+      const newBaseUrl = window.location.origin + window.location.pathname;
+      if (newBaseUrl !== currentBaseUrl) {
+        onBaseUrlChange(newBaseUrl);
+      }
+
+      console.log(currentBaseUrl);
+
       console.time('findElementWithMatchingChildren');
 
       bodyMutationStopped = true;
@@ -372,6 +387,8 @@ function onMutation(mutationsList, observer) {
           listFindAttempts++;
         }
       }
+
+      console.log('onMutationStabilized');
 
       onMutationStabilized();
 
