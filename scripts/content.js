@@ -179,15 +179,17 @@ function isListingCell(element) {
 
   const containsCorrectNumberOfDescendants =
     descendants.length >= 10 && descendants.length <= 100;
-  const containsJob = Array.from(element.attributes).some(
-    (attr) =>
-      attr.name.toLowerCase().includes('job') ||
-      attr.value.toLowerCase().includes('job')
-  );
+  const containsJob = listingNode
+    ? true
+    : Array.from(element.attributes).some(
+        (attr) =>
+          attr.name.toLowerCase().includes('job') ||
+          attr.value.toLowerCase().includes('job')
+      );
 
   if (containsJob && containsCorrectNumberOfDescendants) {
     const hasMoney = containsMoney(text);
-    const hasTimeAgo = containsTimeAgo(text); // TODO: needs to account for 5d ago, 4d, 3yr, etc
+    const hasTimeAgo = containsTimeAgo(text);
     const hasWorkLocation = containsWorkLocation(text);
     const hasCityState = extractCityStateFromSubstring(text);
     // TODO: add another filter for general listing cell terms (Actively Hiring, Apply Now, etc)
@@ -215,11 +217,7 @@ function hasJobInTagName(element) {
   return element.tagName.toLowerCase().includes('job');
 }
 
-function automaticListingFinder(
-  element,
-  minChildrenCount = 10,
-  requiredPercentage = 70
-) {
+function automaticListingFinder(element, minChildrenCount = 10) {
   const directChildren = [...element.children];
 
   if (directChildren.length < minChildrenCount) return false;
@@ -288,7 +286,7 @@ function onMutationStabilized(mutationsList, observer) {
     const allDivElements = listingNode.querySelectorAll(
       'div:not([jlf_element])'
     );
-    const allUlElements = listingNode.querySelectorAll('ul:not([jlf_element])');
+    const allUlElements = listingNode.querySelectorAll('li:not([jlf_element])');
     const allArticleElements = listingNode.querySelectorAll(
       'article:not([jlf_element])'
     );
