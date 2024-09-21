@@ -10,60 +10,15 @@ let observeMutations = false;
 let bodyMutationTimeout;
 let bodyMutationStopped = false;
 
-let listingFound = false;
+let listFindAttempts = 0;
+let listingNode = null;
+
+let sweepCount = 0;
+
+let currentBaseUrl = window.location.origin + window.location.pathname;
 
 function initializeContent() {
   console.log('initializeContent');
-}
-
-function automaticListingFinder(
-  minChildrenCount = 10,
-  minFirstChildDescendants = 10
-) {
-  console.time('findElementWithMatchingChildren');
-
-  const allDivElements = document.body.getElementsByTagName('div');
-  const allUlElements = document.body.getElementsByTagName('ul');
-
-  const allElements = [...allDivElements, ...allUlElements];
-
-  for (let element of allElements) {
-    //TODO: add filter that looks for elements that are not visible
-    const directChildren = element.children;
-    //TODO: find the most common child element type, which is most likely to be the actual list type. Use that index to check.
-    const childIndexToCheck = 3;
-
-    if (directChildren.length >= minChildrenCount) {
-      const middleChildTag =
-        directChildren[childIndexToCheck].tagName.toLowerCase();
-
-      const matchingChildrenCount = Array.from(directChildren).filter(
-        (child) => child.tagName.toLowerCase() === middleChildTag
-      ).length;
-
-      const matchingPercentage =
-        (matchingChildrenCount / directChildren.length) * 100;
-
-      if (matchingPercentage < 90) continue;
-
-      const middleChildDescendants =
-        directChildren[childIndexToCheck].getElementsByTagName('*');
-
-      if (middleChildDescendants.length >= minFirstChildDescendants) {
-        //TODO: include tie breakers. prioritise css selector with 'job'.
-        console.log(
-          'Found an element with at least',
-          minChildrenCount,
-          'direct children of the same tag type:',
-          element
-        );
-        console.timeEnd('findElementWithMatchingChildren');
-        return element;
-      }
-    }
-  }
-
-  return null;
 }
 
 chrome.runtime.onMessage.addListener(function (
@@ -71,6 +26,15 @@ chrome.runtime.onMessage.addListener(function (
   sender,
   sendResponse
 ) {});
+
+function onBaseUrlChange(newBaseUrl) {
+  currentBaseUrl = newBaseUrl;
+
+  listFindAttempts = 0;
+  listingNode = null;
+
+  sweepCount = 0;
+}
 
 function removeListingHighlight() {
   if (highlightedElement) {
@@ -111,17 +75,260 @@ function getElementAttributes(element) {
   }
 }
 
-function onMutationStabilized(mutationsList, observer) {
-  console.log('onMutationStabilized');
-  console.log(listingFound);
-  if (!listingFound) {
-    const listing = automaticListingFinder();
+let nodeCount = 0;
 
-    if (listing !== null) {
-      highlightListing(listing);
-      listingFound = true;
-      //TODO: get and store attributes
-      //TODO: inject popup
+function isListing(node) {
+  if (!node || node.nodeType !== Node.ELEMENT_NODE) return;
+
+  nodeCount++;
+
+  const attributes = node.attributes;
+  const attributeList = {};
+
+  for (let i = 0; i < attributes.length; i++) {
+    const attr = attributes[i];
+    attributeList[attr.name] = attr.value;
+  }
+
+  node.setAttribute('jlf-found', 'found-tag');
+
+  if (node.nodeType === Node.ELEMENT_NODE) {
+    node.childNodes.forEach((child) => traverseNodes(child));
+  }
+}
+
+function containsMoney(text) {
+  const moneyRegex = /\$\d+/g;
+
+  return moneyRegex.test(text);
+}
+
+function containsTimeAgo(text) {
+  const timeAgoRegex = /(second|minute|hour|day|month|year)s?ago/g;
+  const abbreviationRegex = /\b\d+[smhdwy]\b/g;
+  const commonPhrasesRegex = /\b(yesterday|today)\b/g;
+  const timeWithUnitsRegex = /\b\d+\s(week|day|month|year)s?\sago\b/g;
+
+  // New regexes to handle additional cases
+  const lastTimePeriodRegex = /\b(last\s(week|month|year))\b/g;
+  const fewTimeAgoRegex =
+    /\b(a\s(few|couple|several)\s(seconds?|minutes?|hours?|days?|weeks?|months?|years?)\sago)\b/g;
+  const justNowRegex = /\b(just\snow)\b/g;
+  const pastTimePeriodRegex =
+    /\b(in\s(the\s(past|last))\s\d+\s(day|week|month|year)s?)\b/g;
+  const standaloneTimeUnitsRegex = /\b\d+\s(week|month|year)s?\b/g;
+  const earlierTimePeriodRegex =
+    /\b(earlier\s(this\s(week|month|year|day)))\b/g;
+  const withinTimePeriodRegex =
+    /\b(within\s(the\s(last|past))\s\d+\s(day|week|month|year)s?)\b/g;
+  const recentlyRegex = /\b(recently|recent)\b/g;
+
+  return (
+    timeAgoRegex.test(text) ||
+    abbreviationRegex.test(text) ||
+    commonPhrasesRegex.test(text) ||
+    timeWithUnitsRegex.test(text) ||
+    lastTimePeriodRegex.test(text) ||
+    fewTimeAgoRegex.test(text) ||
+    justNowRegex.test(text) ||
+    pastTimePeriodRegex.test(text) ||
+    standaloneTimeUnitsRegex.test(text) ||
+    earlierTimePeriodRegex.test(text) ||
+    withinTimePeriodRegex.test(text) ||
+    recentlyRegex.test(text)
+  );
+}
+
+function containsWorkLocation(text) {
+  const workLocationRegex = new RegExp(
+    [
+      'on[-]?site',
+      'onsite',
+      'officebased',
+      'inoffice',
+      'atoffice',
+      'workonsite',
+      'onlocation',
+      'fullyremote',
+      'remote',
+      'remotework',
+      'workremotely',
+      'workfromhome',
+      'wfh',
+      'telecommute',
+      'remoteoption',
+      'remoteavailable',
+      'remotefriendly',
+      'homebased',
+      'hybrid',
+      'hybridwork',
+      'workhybrid',
+      'hybridremote',
+      'partialremote',
+      'flexiblelocation',
+      'combinationofremoteandonsite',
+      'mixofremoteandin[-]?office'
+    ].join('|'),
+    'i'
+  );
+
+  return workLocationRegex.test(text);
+}
+
+function extractCityStateFromSubstring(text) {
+  const cityStateRegex = /[A-Z][a-zA-Z-]*,[A-Z]{2}/g;
+  return cityStateRegex.test(text);
+}
+
+function highlightListingCell(element) {
+  element.style.backgroundColor = '#d0f0c0';
+  element.style.borderRadius = '4px';
+}
+
+function isListingCell(element) {
+  const descendants = element.querySelectorAll('*');
+  const text = element.textContent.trim().replace(/\s+/g, '');
+
+  const containsCorrectNumberOfDescendants =
+    descendants.length >= 10 && descendants.length <= 100;
+  const containsJob = listingNode
+    ? true
+    : Array.from(element.attributes).some(
+        (attr) =>
+          attr.name.toLowerCase().includes('job') ||
+          attr.value.toLowerCase().includes('job')
+      );
+
+  if (containsJob && containsCorrectNumberOfDescendants) {
+    const hasMoney = containsMoney(text);
+    const hasTimeAgo = containsTimeAgo(text);
+    const hasWorkLocation = containsWorkLocation(text);
+    const hasCityState = extractCityStateFromSubstring(text);
+    // TODO: add another filter for general listing cell terms (Actively Hiring, Apply Now, etc)
+    // TODO: potentially add text length limits and child list limits
+
+    if (hasMoney || hasTimeAgo || hasWorkLocation || hasCityState) {
+      // console.log(element);
+      // console.log(text);
+      // console.log('text.length: ' + text.length);
+      // console.log('descendants.length: ' + descendants.length);
+      // console.log('hasMoney: ' + hasMoney);
+      // console.log('hasTimeAgo: ' + hasTimeAgo);
+      // console.log('hasWorkLocation: ' + hasWorkLocation);
+      // console.log('hasCityState: ' + hasCityState);
+      // console.log('==================');
+
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function hasJobInTagName(element) {
+  return element.tagName.toLowerCase().includes('job');
+}
+
+function automaticListingFinder(element, minChildrenCount = 10) {
+  const directChildren = [...element.children];
+
+  if (directChildren.length < minChildrenCount) return false;
+
+  const childrenWithEnoughDescendants = directChildren.filter((child) => {
+    const text = child.textContent.trim().replace(/\s+/g, '');
+
+    const hasMoney = containsMoney(text);
+    const hasTimeAgo = containsTimeAgo(text);
+    const hasWorkLocation = containsWorkLocation(text);
+    const hasCityState = extractCityStateFromSubstring(text);
+
+    return hasMoney || hasTimeAgo || hasWorkLocation || hasCityState;
+  }).length;
+
+  if (childrenWithEnoughDescendants < 5) return false;
+
+  listingNode = element;
+
+  return true;
+}
+
+var cellsFound = 0;
+
+function onMutationStabilized(mutationsList, observer) {
+  let allElements = [];
+
+  if (!listingNode) {
+    console.log('looking in entire site');
+    const allDivElements = document.body.querySelectorAll(
+      'div:not([jlf_element])'
+    );
+    const allUlElements = document.body.querySelectorAll(
+      'ul:not([jlf_element])'
+    );
+    const allArticleElements = document.body.querySelectorAll(
+      'article:not([jlf_element])'
+    );
+    const allLinkElements = document.body.querySelectorAll(
+      'a:not([jlf_element])'
+    );
+    const elementsWithJobInTagName = findElementsWithJobInTagName(
+      document.body
+    );
+
+    function findElementsWithJobInTagName(rootElement) {
+      const allElements = rootElement.getElementsByTagName('*');
+
+      return Array.from(allElements).filter(
+        (element) =>
+          hasJobInTagName(element) && !element.hasAttribute('jlf_element')
+      );
+    }
+
+    allElements = [
+      ...allDivElements,
+      ...allUlElements,
+      ...allArticleElements,
+      ...allLinkElements,
+      ...elementsWithJobInTagName
+    ];
+  } else {
+    console.log('looking in listing');
+    const allDivElements = listingNode.querySelectorAll(
+      'div:not([jlf_element])'
+    );
+    const allUlElements = listingNode.querySelectorAll('li:not([jlf_element])');
+    const allArticleElements = listingNode.querySelectorAll(
+      'article:not([jlf_element])'
+    );
+    const allLinkElements = listingNode.querySelectorAll(
+      'a:not([jlf_element])'
+    );
+    const elementsWithJobInTagName = findElementsWithJobInTagName(listingNode);
+
+    function findElementsWithJobInTagName(rootElement) {
+      const allElements = rootElement.getElementsByTagName('*');
+
+      return Array.from(allElements).filter(
+        (element) =>
+          hasJobInTagName(element) && !element.hasAttribute('jlf_element')
+      );
+    }
+
+    allElements = [
+      ...allDivElements,
+      ...allUlElements,
+      ...allArticleElements,
+      ...allLinkElements,
+      ...elementsWithJobInTagName
+    ];
+  }
+
+  for (let element of allElements) {
+    if (!element.hasAttribute('jlf_element') && isListingCell(element)) {
+      cellsFound++;
+      element.setAttribute('jlf_element', 'jlf_listing-cell');
+    } else {
+      element.setAttribute('jlf_element', 'jlf_non-job');
     }
   }
 }
@@ -150,9 +357,57 @@ function onMutation(mutationsList, observer) {
   if (relevantNodeFound) {
     clearTimeout(bodyMutationTimeout);
     bodyMutationTimeout = setTimeout(() => {
+      if (sweepCount > 3 && cellsFound < 5) return;
+
+      const newBaseUrl = window.location.origin + window.location.pathname;
+      if (newBaseUrl !== currentBaseUrl) {
+        onBaseUrlChange(newBaseUrl);
+      }
+
+      console.log(currentBaseUrl);
+
+      console.time('findElementWithMatchingChildren');
+
       bodyMutationStopped = true;
+
+      if (!listingNode && listFindAttempts < 5) {
+        const allUlElementsToSearch = document.body.querySelectorAll('ul');
+
+        let listingFound = false;
+        for (let element of allUlElementsToSearch) {
+          listingFound = automaticListingFinder(element);
+          if (listingFound) {
+            element.setAttribute('jlf_element', 'jlf_job-listing');
+          } else {
+            element.setAttribute('jlf_element', 'jlf_non-job-listing');
+          }
+        }
+
+        if (!listingFound) {
+          listFindAttempts++;
+        }
+      }
+
+      console.log('onMutationStabilized');
+
       onMutationStabilized();
-    }, 500);
+
+      if (cellsFound > 5) {
+        const elements = document.querySelectorAll(
+          '[jlf_element="jlf_listing-cell"]'
+        );
+
+        for (let element of elements) {
+          highlightListingCell(element);
+          highlightListingCell(element.children[0]);
+          element.setAttribute('jlf_element', 'jlf_listing-cell-color');
+        }
+      }
+
+      console.timeEnd('findElementWithMatchingChildren');
+
+      sweepCount++;
+    }, 100); //TODO: verify if this limit has any effect
   }
 }
 
