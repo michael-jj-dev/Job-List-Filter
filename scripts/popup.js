@@ -1,5 +1,7 @@
 'use strict';
 
+let filtersEnabled = true;
+
 document.addEventListener('DOMContentLoaded', () => {
   console.log('Popup loaded');
 
@@ -15,15 +17,39 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
+function initializePopup() {
+  chrome.storage.local.get('filtersEnabled', (result) => {
+    const storedFiltersEnabled =
+      result.filtersEnabled !== undefined ? result.filtersEnabled : true;
+    filtersEnabled = storedFiltersEnabled;
+
+    const buttonText = filtersEnabled ? 'Disable Filters' : 'Enable Filters';
+    document.getElementById('jlf_toggle_filters_button').textContent =
+      buttonText;
+  });
+}
+
 document
-  .getElementById('jlf_find_list_button')
+  .getElementById('jlf_toggle_filters_button')
   .addEventListener('click', () => {
+    filtersEnabled = !filtersEnabled;
+
+    chrome.storage.local.set({ filtersEnabled }, () => {
+      console.log('filtersEnabled updated:', filtersEnabled);
+    });
+
+    const buttonText = filtersEnabled ? 'Disable Filters' : 'Enable Filters';
+    document.getElementById('jlf_toggle_filters_button').textContent =
+      buttonText;
+
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       chrome.tabs.sendMessage(tabs[0].id, {
-        action: 'findList'
+        action: 'toggleFilters',
+        enabled: filtersEnabled
       });
     });
-    window.close();
+
+    // window.close(); //TODO: enabled after QA
   });
 
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
@@ -120,6 +146,8 @@ function handleCheckboxChange() {
 
   console.log('Work types selected:', selectedWorkTypes.join(', '));
 }
+
+initializePopup();
 
 onSiteCheckbox.addEventListener('change', handleCheckboxChange);
 hybridCheckbox.addEventListener('change', handleCheckboxChange);

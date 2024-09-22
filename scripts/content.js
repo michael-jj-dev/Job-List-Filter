@@ -15,17 +15,50 @@ let listingNode = null;
 
 let sweepCount = 0;
 
+let filtersEnabled = true;
+
 let currentBaseUrl = window.location.origin + window.location.pathname;
 
 function initializeContent() {
   console.log('initializeContent');
+
+  chrome.storage.local.get('filtersEnabled', (result) => {
+    const storedFiltersEnabled =
+      result.filtersEnabled !== undefined ? result.filtersEnabled : null;
+
+    if (storedFiltersEnabled !== null) {
+      filtersEnabled = storedFiltersEnabled;
+    }
+  });
 }
 
-chrome.runtime.onMessage.addListener(function (
-  request,
-  sender,
-  sendResponse
-) {});
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.action === 'toggleFilters') {
+    filtersEnabled = request.enabled;
+
+    if (filtersEnabled) {
+      const elements = document.querySelectorAll(
+        '[jlf_element="jlf_listing-cell-color"]'
+      );
+
+      for (let element of elements) {
+        highlightListingCell(element);
+        highlightListingCell(element.children[0]);
+      }
+
+      filterListing();
+    } else {
+      const elements = document.querySelectorAll(
+        '[jlf_element="jlf_listing-cell-color"]'
+      );
+
+      for (let element of elements) {
+        removeHighlightFromListingCell(element);
+        removeHighlightFromListingCell(element.children[0]);
+      }
+    }
+  }
+});
 
 function onBaseUrlChange(newBaseUrl) {
   currentBaseUrl = newBaseUrl;
@@ -34,21 +67,6 @@ function onBaseUrlChange(newBaseUrl) {
   listingNode = null;
 
   sweepCount = 0;
-}
-
-function removeListingHighlight() {
-  if (highlightedElement) {
-    highlightedElement.style.border = '';
-  }
-}
-
-function highlightListing(listingElement) {
-  if (highlightedElement !== null) {
-    removeListingHighlight();
-  }
-
-  highlightedElement = listingElement;
-  listingElement.style.border = '2px solid aqua';
 }
 
 const htmlElement = document.querySelector('html'); //TODO: Or document.querySelector('html');
@@ -183,6 +201,11 @@ function extractCityStateFromSubstring(text) {
 function highlightListingCell(element) {
   element.style.backgroundColor = '#d0f0c0';
   element.style.borderRadius = '4px';
+}
+
+function removeHighlightFromListingCell(element) {
+  element.style.backgroundColor = ''; //TODO: may need to keep track of original color
+  element.style.borderRadius = '';
 }
 
 function isListingCell(element) {
@@ -333,6 +356,58 @@ function onMutationStabilized(mutationsList, observer) {
   }
 }
 
+function filterListing() {
+  clearTimeout(bodyMutationTimeout);
+  bodyMutationTimeout = setTimeout(() => {
+    if (!filtersEnabled || (sweepCount > 3 && cellsFound < 5)) return;
+
+    console.time('findElementWithMatchingChildren');
+
+    const newBaseUrl = window.location.origin + window.location.pathname;
+    if (newBaseUrl !== currentBaseUrl) {
+      onBaseUrlChange(newBaseUrl);
+    }
+
+    bodyMutationStopped = true;
+
+    if (!listingNode && listFindAttempts < 5) {
+      const allUlElementsToSearch = document.body.querySelectorAll('ul');
+
+      let listingFound = false;
+      for (let element of allUlElementsToSearch) {
+        listingFound = automaticListingFinder(element);
+        if (listingFound) {
+          element.setAttribute('jlf_element', 'jlf_job-listing');
+        } else {
+          element.setAttribute('jlf_element', 'jlf_non-job-listing');
+        }
+      }
+
+      if (!listingFound) {
+        listFindAttempts++;
+      }
+    }
+
+    onMutationStabilized();
+
+    if (cellsFound > 5) {
+      const elements = document.querySelectorAll(
+        '[jlf_element="jlf_listing-cell"]'
+      );
+
+      for (let element of elements) {
+        highlightListingCell(element);
+        highlightListingCell(element.children[0]);
+        element.setAttribute('jlf_element', 'jlf_listing-cell-color');
+      }
+    }
+
+    console.timeEnd('findElementWithMatchingChildren');
+
+    sweepCount++;
+  }, 100); //TODO: verify if this limit has any effect
+}
+
 function onMutation(mutationsList, observer) {
   let relevantNodeFound = false;
 
@@ -355,59 +430,7 @@ function onMutation(mutationsList, observer) {
   });
 
   if (relevantNodeFound) {
-    clearTimeout(bodyMutationTimeout);
-    bodyMutationTimeout = setTimeout(() => {
-      if (sweepCount > 3 && cellsFound < 5) return;
-
-      const newBaseUrl = window.location.origin + window.location.pathname;
-      if (newBaseUrl !== currentBaseUrl) {
-        onBaseUrlChange(newBaseUrl);
-      }
-
-      console.log(currentBaseUrl);
-
-      console.time('findElementWithMatchingChildren');
-
-      bodyMutationStopped = true;
-
-      if (!listingNode && listFindAttempts < 5) {
-        const allUlElementsToSearch = document.body.querySelectorAll('ul');
-
-        let listingFound = false;
-        for (let element of allUlElementsToSearch) {
-          listingFound = automaticListingFinder(element);
-          if (listingFound) {
-            element.setAttribute('jlf_element', 'jlf_job-listing');
-          } else {
-            element.setAttribute('jlf_element', 'jlf_non-job-listing');
-          }
-        }
-
-        if (!listingFound) {
-          listFindAttempts++;
-        }
-      }
-
-      console.log('onMutationStabilized');
-
-      onMutationStabilized();
-
-      if (cellsFound > 5) {
-        const elements = document.querySelectorAll(
-          '[jlf_element="jlf_listing-cell"]'
-        );
-
-        for (let element of elements) {
-          highlightListingCell(element);
-          highlightListingCell(element.children[0]);
-          element.setAttribute('jlf_element', 'jlf_listing-cell-color');
-        }
-      }
-
-      console.timeEnd('findElementWithMatchingChildren');
-
-      sweepCount++;
-    }, 100); //TODO: verify if this limit has any effect
+    filterListing();
   }
 }
 
