@@ -1,5 +1,12 @@
+chrome.runtime.onInstalled.addListener(() => {
+  chrome.storage.local.get('filtersEnabled', (result) => {
+    if (result.filtersEnabled === undefined) {
+      chrome.storage.local.set({ filtersEnabled: true });
+    }
+  });
+});
+
 chrome.runtime.onConnect.addListener(function (port) {
-  //long term connection
   console.log('Connected to:', port.name);
 
   if (port.name === 'knockknock') {
@@ -9,11 +16,8 @@ chrome.runtime.onConnect.addListener(function (port) {
   }
 });
 
-chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
-  //one-time connection
-  if (request.action === 'findList') {
-    chrome.tabs.sendMessage(request.tabId, {
-      action: request.action
-    });
-  }
-});
+chrome.runtime.onMessage.addListener(function (
+  request,
+  sender,
+  sendResponse
+) {});
